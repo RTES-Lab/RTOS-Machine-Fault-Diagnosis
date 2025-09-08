@@ -1,2 +1,9 @@
 # virtualenv
 rtos_study_model/
+
+# UOS dataset 
+dataset/
+
+__pycache__/
+
+logs
