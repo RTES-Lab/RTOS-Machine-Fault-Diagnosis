@@ -5,6 +5,8 @@ model_root: './models'
 log_root: './logs'
 pic_root: './pics'
 
+sampling_rate: 16000
+
 rpm:
   - 600
   - 800
@@ -20,6 +22,9 @@ label:
   M1: 2
   M2: 3
   M3: 4
+  U1: 5
+  U2: 6
+  U3: 7
 
 # input data length and overlap (no overlap if samplre_size == overlap)
 sample_size: 2048

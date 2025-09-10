@@ -47,7 +47,7 @@ def set_seed(seed: int):
         torch.cuda.manual_seed_all(seed)
 
 
-def get_bearing_paths(root: str, bearing_type: str, rpm_list: list) -> list:
+def get_bearing_paths(root: str, bearing_type: str, rpm_list: list, sampling_rate: str) -> list:
     """
     주어진 베어링 타입과 rpm 리스트에 따라 데이터셋 경로를 반환하는 함수.
 
@@ -65,7 +65,7 @@ def get_bearing_paths(root: str, bearing_type: str, rpm_list: list) -> list:
     list
         각 rpm에 해당하는 데이터셋 경로들의 리스트
     """
-    base = os.path.join(root, f'BearingType_{bearing_type}', 'SamplingRate_16000') # 16000만 사용
+    base = os.path.join(root, f'BearingType_{bearing_type}', f'SamplingRate_{sampling_rate}') # 16000만 사용
     return [os.path.join(base, f'RotatingSpeed_{rpm}') for rpm in rpm_list]
 
 

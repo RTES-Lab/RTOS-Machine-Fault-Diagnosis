@@ -24,11 +24,16 @@ def make_dataframe(config, data_dirs):
             split_str = filepath.split('_')
             if split_str[4] != 'H':
                 continue
+
             data = io.loadmat(filepath)
             body = data['Data']
             body = np.ravel(body, order="F")
             fault_type = split_str[3].split('/')[-1]
             bearing_type = split_str[1].split('/')[0]  
+
+            # Label(기계결함)에 없는 결함은 사용 X
+            if fault_type not in config.label:
+                continue
 
             df['data'].append(body)
             df['fault_type'].append(fault_type)

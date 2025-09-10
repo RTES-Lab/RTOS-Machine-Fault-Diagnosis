@@ -23,9 +23,9 @@ def main(config):
 
     data_root_dirs = os.path.join(config.dataset_root)
 
-    Cylindrical_dirs = funs.get_bearing_paths(data_root_dirs, 'CylindricalRoller', config.rpm)
-    DepGroove_dirs = funs.get_bearing_paths(data_root_dirs, 'DeepGrooveBall', config.rpm)
-    Tapered_dirs = funs.get_bearing_paths(data_root_dirs, 'TaperedRoller', config.rpm)
+    Cylindrical_dirs = funs.get_bearing_paths(data_root_dirs, 'CylindricalRoller', config.rpm, config.sampling_rate)
+    DepGroove_dirs = funs.get_bearing_paths(data_root_dirs, 'DeepGrooveBall', config.rpm, config.sampling_rate)
+    Tapered_dirs = funs.get_bearing_paths(data_root_dirs, 'TaperedRoller', config.rpm, config.sampling_rate)
 
     print("Making dataframes...")
 
