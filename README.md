@@ -3,6 +3,7 @@ RTES 연구실 2025 여름방학 스터디
 
 실행방법
 1. dataset/ 폴더에 UOS 데이터셋 위치
+```
 dataset/
 ├── BearingType_CylindricalRoller
 │   ├── SamplingRate_16000
@@ -49,6 +50,7 @@ dataset/
         ├── RotatingSpeed_1600
         ├── RotatingSpeed_600
         └── RotatingSpeed_800
+```
 2. $ python main.py
 
 # 파일 구조 설명
