@@ -16,17 +16,14 @@ rpm:
 # data labels
 label:
   H: 0
-  U1: 1
-  U2: 2
-  U3: 3
-  L: 4
-  M1: 5
-  M2: 6
-  M3: 7
+  L: 1
+  M1: 2
+  M2: 3
+  M3: 4
 
-# input data length and overlap
+# input data length and overlap (no overlap if samplre_size == overlap)
 sample_size: 2048
-overlap: 1024
+overlap: 2048
 
 # learning parameters
 batch_size: 128

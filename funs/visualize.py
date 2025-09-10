@@ -11,12 +11,12 @@ import numpy as np
 def plot_confusion_matrix(root, fault_label_list, predicted_label_list, pic_name):
     os.makedirs(f'{root}/', exist_ok=True)
 
-    cm = confusion_matrix(fault_label_list, predicted_label_list)
+    cm = confusion_matrix(fault_label_list, predicted_label_list, normalize='true')
     classes = np.unique(fault_label_list)  
 
     # 시각화
     plt.figure(figsize=(8, 6))
-    sns.heatmap(cm, annot=True, fmt="d", cmap="Blues", xticklabels=classes, yticklabels=classes)
+    sns.heatmap(cm, annot=True, fmt=".2f", cmap="Blues", xticklabels=classes, yticklabels=classes)
     plt.xlabel("Predicted Labels")
     plt.ylabel("True Labels")
     plt.title("Confusion Matrix")

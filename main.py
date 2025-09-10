@@ -16,6 +16,11 @@ def main(config):
     device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
     print('device =', device)
 
+    # name setting
+    model_name = 'FRFconv-TDS_overlapX'
+    log_file = 'log_per_acc_overlapX.txt'
+    cm_name = 'confusion_matrix_overlapX.png'
+
     data_root_dirs = os.path.join(config.dataset_root)
 
     Cylindrical_dirs = funs.get_bearing_paths(data_root_dirs, 'CylindricalRoller', config.rpm)
@@ -55,8 +60,6 @@ def main(config):
     optimizer = Adam(FRFconv_TDS.parameters(), lr = float(config.learning_rate))
     loss = CrossEntropyLoss()
 
-    model_name = 'FRFconv-TDS'
-
     trainer = funs.Trainer(FRFconv_TDS, loss, optimizer, device, train_loader, val_loader)
     train_loss, val_loss = trainer.train(config.epoch)
     trainer.save(config.model_root, model_name)
@@ -67,11 +70,10 @@ def main(config):
     fault_label_list, val_loss, predicted_label_list = trainer.eval() 
 
     # acc per class logging
-    log_file = 'log_per_acc.txt'
     funs.log_class_acc(config.log_root, fault_label_list, predicted_label_list, f'{log_file}')
 
     # confusion matrix plot
-    funs.plot_confusion_matrix(config.pic_root ,fault_label_list, predicted_label_list, 'confusion_matrix.png')
+    funs.plot_confusion_matrix(config.pic_root ,fault_label_list, predicted_label_list, cm_name)
 
 if __name__=='__main__':
     config = funs.load_yaml('./config.yaml')
