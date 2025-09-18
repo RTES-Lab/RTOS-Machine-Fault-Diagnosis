@@ -61,17 +61,16 @@ def main(config):
     loss = CrossEntropyLoss()
 
     trainer = funs.Trainer(FRFconv_TDS, loss, optimizer, device, train_loader, val_loader)
-    train_loss, val_loss = trainer.train(config.epoch)
+    _, _ = trainer.train(config.epoch)
     trainer.save(config.model_root, model_name)
 
     model_path = f'{config.model_root}/{model_name}.pt'
     trainer.model.load_state_dict(torch.load(model_path, weights_only=True))
 
-    fault_label_list, val_loss, predicted_label_list = trainer.eval() 
+    fault_label_list, test_loss, predicted_label_list = trainer.test(test_loader)
 
     # acc per class logging
     funs.log_class_acc(config.log_root, fault_label_list, predicted_label_list, f'{log_file}')
-
     # confusion matrix plot
     funs.plot_confusion_matrix(config.pic_root ,fault_label_list, predicted_label_list, cm_name)
 

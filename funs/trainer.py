@@ -19,13 +19,15 @@ class Trainer:
         train_loss_list = []
         val_loss_list = []
 
-        for epoch in range(0, epoch + 1):
+        for ep in range(0, epoch + 1):
             train_loss, train_accuracy = self.training_step(self.train_loader)
-            print(f'[EPOCH: {epoch}] \nTrain Loss: {train_loss:.5f}\nTrain Acc: {train_accuracy:.5f}\n')
             train_loss_list.append(train_loss)
 
-            _, val_loss, _ = self.eval()
-            val_loss_list.append(val_loss)
+            if ep % 10 == 0 or ep == epoch:
+                _, val_loss, _ = self.eval(self.eval_loader)
+                val_loss_list.append(val_loss)
+                print(f'[EPOCH: {ep}] \nTrain Loss: {train_loss:.5f}\nTrain Acc: {train_accuracy:.5f}\n'
+                      f'Validation Loss: {val_loss:.5f}\n' + '-' * 40)
 
         return train_loss_list, val_loss_list
 
@@ -52,24 +54,32 @@ class Trainer:
         train_accuracy = correct / len(train_loader.dataset)
         return train_loss, train_accuracy
             
-    def eval(self):
-        print("\nStarting Evaluation... \n" + "-" * 40)
+    def eval(self, eval_loader):
         self.model.eval()
-        eval_loss_list, fault_label_list, predicted_label_list = self.validation_step(self.eval_loader)
+        eval_loss_list, fault_label_list, predicted_label_list = self.validation_step(eval_loader)
 
         val_loss = np.mean(eval_loss_list)
-        print(f'Validation Loss: {val_loss:.5f}')
             
         return fault_label_list, val_loss, predicted_label_list
+    
+    def test(self, test_loader):
+        print("\nStarting Test... \n" + "-" * 40)
+        self.model.eval()
+        test_loss_list, fault_label_list, predicted_label_list = self.validation_step(test_loader)
 
-    def validation_step(self, eval_loader):
+        test_loss = np.mean(test_loss_list)
+        print(f'Test Loss: {test_loss:.5f}')
+            
+        return fault_label_list, test_loss_list, predicted_label_list
+
+    def validation_step(self, dataloder):
         eval_loss_list = []
 
         fault_label_list = []
         predicted_label_list = []
 
         with torch.no_grad():
-            for batch_idx, (data, label) in enumerate(eval_loader):
+            for batch_idx, (data, label) in enumerate(dataloder):
                 x = data.to(self.device)
                 label = label.to(self.device)
 
