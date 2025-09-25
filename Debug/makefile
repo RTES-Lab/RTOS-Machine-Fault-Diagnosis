@@ -9,6 +9,7 @@ RM := rm -rf
 
 # All of the sources participating in the build are defined here
 -include sources.mk
+-include X-CUBE-AI/App/subdir.mk
 -include USB_HOST/Target/subdir.mk
 -include USB_HOST/App/subdir.mk
 -include Middlewares/USB_Host_Library/subdir.mk
@@ -38,34 +39,34 @@ $(wildcard ../makefile.init) \
 $(wildcard ../makefile.targets) \
 
 
-BUILD_ARTIFACT_NAME := RTOS-Machine-Fault-Diagnosis-feature-16kHz_debugging
+BUILD_ARTIFACT_NAME := model_task
 BUILD_ARTIFACT_EXTENSION := elf
 BUILD_ARTIFACT_PREFIX :=
 BUILD_ARTIFACT := $(BUILD_ARTIFACT_PREFIX)$(BUILD_ARTIFACT_NAME)$(if $(BUILD_ARTIFACT_EXTENSION),.$(BUILD_ARTIFACT_EXTENSION),)
 
 # Add inputs and outputs from these tool invocations to the build variables 
 EXECUTABLES += \
-RTOS-Machine-Fault-Diagnosis-feature-16kHz_debugging.elf \
+model_task.elf \
 
 MAP_FILES += \
-RTOS-Machine-Fault-Diagnosis-feature-16kHz_debugging.map \
+model_task.map \
 
 SIZE_OUTPUT += \
 default.size.stdout \
 
 OBJDUMP_LIST += \
-RTOS-Machine-Fault-Diagnosis-feature-16kHz_debugging.list \
+model_task.list \
 
 
 # All Target
 all: main-build
 
 # Main-build Target
-main-build: RTOS-Machine-Fault-Diagnosis-feature-16kHz_debugging.elf secondary-outputs
+main-build: model_task.elf secondary-outputs
 
 # Tool invocations
-RTOS-Machine-Fault-Diagnosis-feature-16kHz_debugging.elf RTOS-Machine-Fault-Diagnosis-feature-16kHz_debugging.map: $(OBJS) $(USER_OBJS) C:\Users\ChoiSeongHyeon\Desktop\SR_CODE_Copy\RTOS-Machine-Fault-Diagnosis-feature-0921\RTOS-Machine-Fault-Diagnosis-feature-16kHz_debugging\STM32F401RETX_FLASH.ld makefile objects.list $(OPTIONAL_TOOL_DEPS)
-	arm-none-eabi-gcc -o "RTOS-Machine-Fault-Diagnosis-feature-16kHz_debugging.elf" @"objects.list" $(USER_OBJS) $(LIBS) -mcpu=cortex-m4 -T"C:\Users\ChoiSeongHyeon\Desktop\SR_CODE_Copy\RTOS-Machine-Fault-Diagnosis-feature-0921\RTOS-Machine-Fault-Diagnosis-feature-16kHz_debugging\STM32F401RETX_FLASH.ld" --specs=nosys.specs -Wl,-Map="RTOS-Machine-Fault-Diagnosis-feature-16kHz_debugging.map" -Wl,--gc-sections -static --specs=nano.specs -mfpu=fpv4-sp-d16 -mfloat-abi=hard -mthumb -u _printf_float -u _scanf_float -Wl,--start-group -lc -lm -Wl,--end-group
+model_task.elf model_task.map: $(OBJS) $(USER_OBJS) C:\Github\RTOS-Machine-Fault-Diagnosis\STM32F401RETX_FLASH.ld makefile objects.list $(OPTIONAL_TOOL_DEPS)
+	arm-none-eabi-gcc -o "model_task.elf" @"objects.list" $(USER_OBJS) $(LIBS) -mcpu=cortex-m4 -T"C:\Github\RTOS-Machine-Fault-Diagnosis\STM32F401RETX_FLASH.ld" --specs=nosys.specs -Wl,-Map="model_task.map" -Wl,--gc-sections -static -L../Middlewares/ST/AI/Lib --specs=nano.specs -mfpu=fpv4-sp-d16 -mfloat-abi=hard -mthumb -u _printf_float -u _scanf_float -Wl,--start-group -lc -lm -Wl,--end-group
 	@echo 'Finished building target: $@'
 	@echo ' '
 
@@ -74,14 +75,14 @@ default.size.stdout: $(EXECUTABLES) makefile objects.list $(OPTIONAL_TOOL_DEPS)
 	@echo 'Finished building: $@'
 	@echo ' '
 
-RTOS-Machine-Fault-Diagnosis-feature-16kHz_debugging.list: $(EXECUTABLES) makefile objects.list $(OPTIONAL_TOOL_DEPS)
-	arm-none-eabi-objdump -h -S $(EXECUTABLES) > "RTOS-Machine-Fault-Diagnosis-feature-16kHz_debugging.list"
+model_task.list: $(EXECUTABLES) makefile objects.list $(OPTIONAL_TOOL_DEPS)
+	arm-none-eabi-objdump -h -S $(EXECUTABLES) > "model_task.list"
 	@echo 'Finished building: $@'
 	@echo ' '
 
 # Other Targets
 clean:
-	-$(RM) RTOS-Machine-Fault-Diagnosis-feature-16kHz_debugging.elf RTOS-Machine-Fault-Diagnosis-feature-16kHz_debugging.list RTOS-Machine-Fault-Diagnosis-feature-16kHz_debugging.map default.size.stdout
+	-$(RM) default.size.stdout model_task.elf model_task.list model_task.map
 	-@echo ' '
 
 secondary-outputs: $(SIZE_OUTPUT) $(OBJDUMP_LIST)

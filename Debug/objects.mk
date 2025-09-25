@@ -5,5 +5,5 @@
 
 USER_OBJS :=
 
-LIBS :=
+LIBS := -l:NetworkRuntime1020_CM4_GCC.a
 

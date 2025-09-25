@@ -36,10 +36,12 @@
 /* USER CODE END Header */
 /* Includes ------------------------------------------------------------------*/
 #include "main.h"
+#include "crc.h"
 #include "i2c.h"
 #include "usart.h"
 #include "usb_host.h"
 #include "gpio.h"
+#include "app_x-cube-ai.h"
 
 /* Private includes ----------------------------------------------------------*/
 /* USER CODE BEGIN Includes */
@@ -52,6 +54,12 @@
 #include "semphr.h"
 #include "usbh_audio.h"
 #include "i2c_lcd.h"
+
+#include "ai_datatypes_defines.h"
+#include "ai_platform.h"
+#include "frfconv.h"
+#include "frfconv_data.h"
+#include "app_x-cube-ai.h"
 /* USER CODE END Includes */
 
 /* Private typedef -----------------------------------------------------------*/
@@ -85,6 +93,13 @@ extern USBH_HandleTypeDef hUsbHostFS;
 
 SemaphoreHandle_t xBinarySemaphore;
 extern UART_HandleTypeDef huart2;
+
+static ai_u8 activations[AI_FRFCONV_DATA_ACTIVATIONS_SIZE];
+static ai_float in_data[AI_FRFCONV_IN_1_SIZE];
+static ai_float out_data[AI_FRFCONV_OUT_1_SIZE];
+
+static ai_buffer *ai_input;
+static ai_buffer *ai_output;
 /* USER CODE END PV */
 
 /* Private function prototypes -----------------------------------------------*/
@@ -108,6 +123,8 @@ void vPrintString(const char *str);
 void vUSBReadTask(void *pvParameters);
 static void vHandlerTask(void *pvParameters);
 void DumpHexUART(uint8_t *buf, uint16_t len);
+void modelTask(void *pvParameters);
+void vLCDTask(void *pvParameters);
 
 /* USER CODE END PFP */
 
@@ -122,6 +139,7 @@ void DumpHexUART(uint8_t *buf, uint16_t len);
   */
 int main(void)
 {
+
   /* USER CODE BEGIN 1 */
   /* (필요 시 프리런 초기화 코드) */
   /* USER CODE END 1 */
@@ -143,22 +161,21 @@ int main(void)
   /* USER CODE END SysInit */
 
   /* Initialize all configured peripherals */
-  MX_USB_HOST_Init();
   MX_GPIO_Init();
   MX_USART2_UART_Init();
-
-
+//  MX_USB_HOST_Init();
+  MX_CRC_Init();
   /* USER CODE BEGIN 2 */
   const char *boot = "[BOOT] UART ready\r\n";
   HAL_UART_Transmit(&huart2, (uint8_t*)boot, strlen(boot), 100);
 
-  MX_I2C1_Init();
-  lcd_init();
-
+//  MX_I2C1_Init();
+//  lcd_init();
 
 //  xTaskCreate(vUSBInitTask, "USB Task",  512,  NULL, 1, NULL);
-  xTaskCreate(vUSBReadTask, "USBRead",  1024,  NULL, 2, NULL);
-//  xTaskCreate(vLCDTask, "LCD Task", 512, NULL, 3, NULL);
+  xTaskCreate(vUSBReadTask, "USBRead",  1024,  NULL, 1, NULL);
+//  xTaskCreate(vLCDTask, "LCD Task", 512, NULL, 2, NULL);
+  xTaskCreate(modelTask, "model Task", 1024*2, NULL, 3, NULL);
 
   vTaskStartScheduler();
 
@@ -169,16 +186,56 @@ int main(void)
   while (1)
   {
     /* USER CODE END WHILE */
-
-	/* USER CODE BEGIN 3 */
-//    MX_USB_HOST_Process();
-
-
+    /* USER CODE BEGIN 3 */
   }
 
 }
-/* USER CODE END 3 */
+  /* USER CODE END 3 */
 
+/**
+  * @brief System Clock Configuration
+  * @retval None
+  */
+//void SystemClock_Config(void)
+//{
+//  RCC_OscInitTypeDef RCC_OscInitStruct = {0};
+//  RCC_ClkInitTypeDef RCC_ClkInitStruct = {0};
+//
+//  /** Configure the main internal regulator output voltage
+//  */
+//  __HAL_RCC_PWR_CLK_ENABLE();
+//  __HAL_PWR_VOLTAGESCALING_CONFIG(PWR_REGULATOR_VOLTAGE_SCALE2);
+//
+//  /** Initializes the RCC Oscillators according to the specified parameters
+//  * in the RCC_OscInitTypeDef structure.
+//  */
+//  RCC_OscInitStruct.OscillatorType = RCC_OSCILLATORTYPE_HSE;
+//  RCC_OscInitStruct.HSEState = RCC_HSE_BYPASS;
+//  RCC_OscInitStruct.PLL.PLLState = RCC_PLL_ON;
+//  RCC_OscInitStruct.PLL.PLLSource = RCC_PLLSOURCE_HSE;
+//  RCC_OscInitStruct.PLL.PLLM = 4;
+//  RCC_OscInitStruct.PLL.PLLN = 168;
+//  RCC_OscInitStruct.PLL.PLLP = RCC_PLLP_DIV4;
+//  RCC_OscInitStruct.PLL.PLLQ = 7;
+//  if (HAL_RCC_OscConfig(&RCC_OscInitStruct) != HAL_OK)
+//  {
+//    Error_Handler();
+//  }
+//
+//  /** Initializes the CPU, AHB and APB buses clocks
+//  */
+//  RCC_ClkInitStruct.ClockType = RCC_CLOCKTYPE_HCLK|RCC_CLOCKTYPE_SYSCLK
+//                              |RCC_CLOCKTYPE_PCLK1|RCC_CLOCKTYPE_PCLK2;
+//  RCC_ClkInitStruct.SYSCLKSource = RCC_SYSCLKSOURCE_PLLCLK;
+//  RCC_ClkInitStruct.AHBCLKDivider = RCC_SYSCLK_DIV1;
+//  RCC_ClkInitStruct.APB1CLKDivider = RCC_HCLK_DIV2;
+//  RCC_ClkInitStruct.APB2CLKDivider = RCC_HCLK_DIV1;
+//
+//  if (HAL_RCC_ClockConfig(&RCC_ClkInitStruct, FLASH_LATENCY_2) != HAL_OK)
+//  {
+//    Error_Handler();
+//  }
+//}
 
 /* USER CODE BEGIN 4 */
 /**
@@ -277,6 +334,7 @@ void DumpHexUART(uint8_t *buf, uint16_t len)
   */
 void vUSBReadTask(void *pvParameters)
 {
+	MX_USB_HOST_Init();
     AUDIO_HandleTypeDef *audio_handle;
     uint8_t *buf;
     char msg[64];
@@ -334,12 +392,6 @@ void vUSBReadTask(void *pvParameters)
 
 				// ★ 2048개 꽉 찼을 때만 전송
 				else{
-					uint8_t hdr[2];
-					hdr[0] = 0xAA;
-					hdr[1] = 0xFF;
-
-					HAL_UART_Transmit(&huart2, hdr, (uint16_t)sizeof(hdr), HAL_MAX_DELAY);
-
 					HAL_UART_Transmit(&huart2,
 									  (uint8_t*)sample_buffer,
 									  (uint16_t)(SAMPLES_TO_SAVE * sizeof(float)),
@@ -444,12 +496,66 @@ void vLCDTask(void *pvParameters)
     }
 }
 
-static void vHandlerTask(void *pvParameters){
-  (void)pvParameters;
-  for(;;){
-    xSemaphoreTake(xBinarySemaphore, portMAX_DELAY);
-    vPrintString("Handler task - Processing event.\r\n");
-  }
+// Model task
+void modelTask(void *pvParameters){
+
+    ai_handle frfconv = AI_HANDLE_NULL;
+    ai_error err;
+    ai_network_report report;
+
+    const ai_handle acts[] = { activations };
+    err = ai_frfconv_create_and_init(&frfconv, acts, NULL);
+    if (err.type != AI_ERROR_NONE) {
+    	vPrintString("ai init_and_create error\n");
+        return -1;
+    }
+
+    if (ai_frfconv_get_report(frfconv, &report) != true) {
+    	vPrintString("ai get report error\n");
+        return -1;
+    }
+
+    for (;;){
+		char buf[128];
+
+		ai_input = &report.inputs[0];
+		ai_output = &report.outputs[0];
+
+
+		srand(1);
+		for (int i = 0; i < AI_FRFCONV_IN_1_SIZE; i++) {
+		    in_data[i] = (float)rand() / (float)RAND_MAX;
+		}
+
+		ai_i32 n_batch;
+
+		ai_input = ai_frfconv_inputs_get(frfconv, NULL);
+		ai_output = ai_frfconv_outputs_get(frfconv, NULL);
+
+		ai_input[0].data = AI_HANDLE_PTR(in_data);
+		ai_output[0].data = AI_HANDLE_PTR(out_data);
+
+		n_batch = ai_frfconv_run(frfconv, &ai_input[0], &ai_output[0]);
+		if (n_batch != 1) {
+			ai_error err = ai_frfconv_get_error(frfconv);
+
+			char buf[128];
+			int len = snprintf(buf, sizeof(buf), "ai run error %d, %d\r\n", err.type, err.code);
+			HAL_UART_Transmit(&huart2, (uint8_t*)buf, len, HAL_MAX_DELAY);
+		}
+
+		int len = snprintf(buf, sizeof(buf), "\r\nInference output..\r\n");
+		HAL_UART_Transmit(&huart2, (uint8_t*)buf, len, HAL_MAX_DELAY);
+
+		// 출력 값 반복
+		for (int i = 0; i < AI_FRFCONV_OUT_1_SIZE; i++) {
+			float y_val = (float)out_data[i];
+			len = snprintf(buf, sizeof(buf), "%.2f,", y_val);
+			HAL_UART_Transmit(&huart2, (uint8_t*)buf, len, HAL_MAX_DELAY);
+		}
+		vTaskDelay(pdMS_TO_TICKS(500));
+    }
+
 }
 
 
@@ -506,7 +612,6 @@ void Error_Handler(void)
   }
   /* USER CODE END Error_Handler_Debug */
 }
-
 #ifdef USE_FULL_ASSERT
 /**
   * @brief  Reports the name of the source file and the source line number
