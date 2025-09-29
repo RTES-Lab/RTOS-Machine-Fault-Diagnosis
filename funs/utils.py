@@ -5,6 +5,7 @@ from datetime import datetime
 import yaml
 from box import Box
 import random
+import argparse
 
 import numpy as np
 import torch
@@ -87,3 +88,19 @@ def log_class_acc(root, fault_label_list, predicted_label_list, log_file):
             f.write(f"Class {cls_idx}: {acc:.5f}  ")
         f.write("\n")
     print("Class-wise accuracy logged to", log_file)
+
+
+def parse_arguments():
+    parser = argparse.ArgumentParser(description="KSNVE challenge")
+    
+    # latent space 인자
+    parser.add_argument(
+        "--epochs", 
+        type=int, 
+        default=100,
+        help="Number of training epochs (예: --epochs 100, 기본값: 100)"
+    )
+        
+    args = parser.parse_args()
+
+    return args

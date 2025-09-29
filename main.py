@@ -10,16 +10,18 @@ from torchvision import transforms
 
 import pandas as pd 
 
-def main(config):
+def main(config, args):
     # Initalize 
     funs.set_seed(config.seed)
     device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
     print('device =', device)
 
+    ep = args.epochs
+
     # name setting
-    model_name = 'FRFconv-TDS_overlapX'
-    log_file = 'log_per_acc_overlapX.txt'
-    cm_name = 'confusion_matrix_overlapX.png'
+    model_name = f'FRFconv-TDS_{ep}'
+    log_file = f'log_per_acc_{ep}.txt'
+    cm_name = f'confusion_matrix_{ep}.png'
 
     data_root_dirs = os.path.join(config.dataset_root)
 
@@ -61,7 +63,7 @@ def main(config):
     loss = CrossEntropyLoss()
 
     trainer = funs.Trainer(FRFconv_TDS, loss, optimizer, device, train_loader, val_loader)
-    _, _ = trainer.train(config.epoch)
+    _, _ = trainer.train(epoch=ep)
     trainer.save(config.model_root, model_name)
 
     model_path = f'{config.model_root}/{model_name}.pt'
@@ -76,5 +78,6 @@ def main(config):
 
 if __name__=='__main__':
     config = funs.load_yaml('./config.yaml')
+    args = funs.parse_arguments()
 
-    main(config)
+    main(config, args)
