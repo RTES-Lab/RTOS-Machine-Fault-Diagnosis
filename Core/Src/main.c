@@ -90,8 +90,11 @@
 extern ApplicationTypeDef Appli_state;
 extern char USBHPath[4];
 extern USBH_HandleTypeDef hUsbHostFS;
+// 데이터 수집 완료를 알리기 위한 바이너리 세마포어 핸들
+SemaphoreHandle_t xDataReadySemaphore;
+// USBReadTask에서 수집하고 modelTask에서 사용할 공유 데이터 버퍼
+static float sample_buffer[SAMPLES_TO_SAVE];
 
-SemaphoreHandle_t xBinarySemaphore;
 extern UART_HandleTypeDef huart2;
 
 static ai_u8 activations[AI_FRFCONV_DATA_ACTIVATIONS_SIZE];
@@ -102,7 +105,7 @@ static ai_buffer *ai_input;
 static ai_buffer *ai_output;
 /* USER CODE END PV */
 
-/* Private function prototypes -----------------------------------------------*/
+/* Private function prototypes ---------------------------m--------------------*/
 void SystemClock_Config(void);
 void MX_USB_HOST_Process(void);
 
@@ -119,9 +122,7 @@ int32_t convert24bitToInt32(uint8_t *p);
 /* 프린트/태스크/헬퍼 함수 프로토타입 */
 void SystemClock_Config(void);
 void vPrintString(const char *str);
-//void vUSBInitTask(void *pvParameters);
 void vUSBReadTask(void *pvParameters);
-static void vHandlerTask(void *pvParameters);
 void DumpHexUART(uint8_t *buf, uint16_t len);
 void modelTask(void *pvParameters);
 void vLCDTask(void *pvParameters);
@@ -163,7 +164,6 @@ int main(void)
   /* Initialize all configured peripherals */
   MX_GPIO_Init();
   MX_USART2_UART_Init();
-//  MX_USB_HOST_Init();
   MX_CRC_Init();
   /* USER CODE BEGIN 2 */
   const char *boot = "[BOOT] UART ready\r\n";
@@ -172,10 +172,18 @@ int main(void)
 //  MX_I2C1_Init();
 //  lcd_init();
 
-//  xTaskCreate(vUSBInitTask, "USB Task",  512,  NULL, 1, NULL);
+  xDataReadySemaphore = xSemaphoreCreateBinary();
+  if (xDataReadySemaphore == NULL) {
+      vPrintString("[ERROR] Failed to create data ready semaphore!\r\n");
+      while(1); // 시스템 정지
+  }
+
   xTaskCreate(vUSBReadTask, "USBRead",  1024,  NULL, 1, NULL);
-//  xTaskCreate(vLCDTask, "LCD Task", 512, NULL, 2, NULL);
-  xTaskCreate(modelTask, "model Task", 1024*2, NULL, 3, NULL);
+//  xTaskCreate(vLCDTask, "LCD Task", 512, NULL, 3, NULL);
+  xTaskCreate(modelTask, "model Task", 1024*2, NULL, 2, NULL);
+
+  // HAL_Delay 등 기능은 무조건 RTOS 시작 후 실행되게 하기 위해 초기화 늦게 수행
+  MX_USB_HOST_Init();
 
   vTaskStartScheduler();
 
@@ -317,166 +325,80 @@ void DumpHexUART(uint8_t *buf, uint16_t len)
 }
 
 /**
-  * @brief  USB init 태스크. 주기 10ms
-  */
-//void vUSBInitTask(void *pvParameters)
-//{
-//  MX_USB_HOST_Init();
-//    for (;;)
-//    {
-//        MX_USB_HOST_Process();
-//        vTaskDelay(pdMS_TO_TICKS(10));
-//    }
-//}
-
-/**
   * @brief  USB 가속도계로부터 데이터를 읽고 출력하는 태스크. 주기 10ms
   */
 void vUSBReadTask(void *pvParameters)
 {
-	MX_USB_HOST_Init();
     AUDIO_HandleTypeDef *audio_handle;
     uint8_t *buf;
-    char msg[64];
-
-    static float sample_buffer[SAMPLES_TO_SAVE];
 
     int collected_samples = 0;
     static uint8_t isoc_submitted = 0;
 
-//    while (Appli_state != APPLICATION_READY) // APPLICATION_READY 상태가 될때까지 대기
-//    {
-//        vPrintString("Waiting for USB ready...\r\n");
-//        vTaskDelay(pdMS_TO_TICKS(500));
-//    }
-
     for (;;) {
-    	MX_USB_HOST_Process();
+       MX_USB_HOST_Process();
         audio_handle = (AUDIO_HandleTypeDef *)hUsbHostFS.pActiveClass->pData;
 
         if (!(audio_handle && audio_handle->microphone.supported)) {
-//            taskYIELD();
-            continue;
+        	vTaskDelay(pdMS_TO_TICKS(1));
+        	continue;
         }
 
         buf = audio_handle->microphone.buf;
 
         if (!isoc_submitted) {
-                    if (USBH_IsocReceiveData(&hUsbHostFS,
-                                             buf,
-                                             audio_handle->microphone.frame_length,
-                                             audio_handle->microphone.Pipe) == USBH_OK) {
-                        isoc_submitted = 1;
-                    }
-                    // 다음 틱에서 DONE 될 때까지 기다림
-                    taskYIELD();
-                    continue;
-                }
+            if (USBH_IsocReceiveData(&hUsbHostFS,
+                           buf,
+                           audio_handle->microphone.frame_length,
+                           audio_handle->microphone.Pipe) == USBH_OK) {
+               isoc_submitted = 1;
+            }
+            vTaskDelay(pdMS_TO_TICKS(1));
+            continue;
+        }
 
         USBH_URBStateTypeDef urb =
                     USBH_LL_GetURBState(&hUsbHostFS, audio_handle->microphone.Pipe);
 
-
         if (urb == USBH_URB_DONE) {
-        	int frames_in_buf = audio_handle->microphone.frame_length / FRAME_SIZE; // 1ms 패킷 안에 들어있는 샘플 프레임 개수, 1 USB 프레임 길이 frame_length = 288, 1 오디오 FRAME_SIZE = 2(채널) * 3(24 bit)
+            int frames_in_buf = audio_handle->microphone.frame_length / FRAME_SIZE;
 
-
-			for (int i = 0; i < frames_in_buf; i += DOWNSAMPLE_FACTOR) // frames_in_buf는 결국 1ms에 들어온 48개의 오디오 프레임을 의미
-			{
-				int32_t sample_val = convert24bitToInt32(&buf[i * FRAME_SIZE]);
-				float scaled_val = (float)sample_val * SCALE_FACTOR;
-
-				if (collected_samples < SAMPLES_TO_SAVE) {
-					 sample_buffer[collected_samples++] = scaled_val;
-				}
-
-				// ★ 2048개 꽉 찼을 때만 전송
-				else{
-					HAL_UART_Transmit(&huart2,
-									  (uint8_t*)sample_buffer,
-									  (uint16_t)(SAMPLES_TO_SAVE * sizeof(float)),
-									  HAL_MAX_DELAY);
-					collected_samples = 0;
-					sample_buffer[collected_samples++] = scaled_val;
-				}
-			}
+            for (int i = 0; i < frames_in_buf; i += DOWNSAMPLE_FACTOR){
+               if (collected_samples < SAMPLES_TO_SAVE) {
+                    int32_t sample_val = convert24bitToInt32(&buf[i * FRAME_SIZE]);
+                    float scaled_val = (float)sample_val * SCALE_FACTOR;
+                    sample_buffer[collected_samples++] = scaled_val;
+               }
+               // 2048개 샘플이 모두 모였을 때
+               if (collected_samples >= SAMPLES_TO_SAVE){
+                   vPrintString("[USBTask] Sampled Data:\r\n");
+                    char buf[128];
+                    // 처음 3개
+                    snprintf(buf, sizeof(buf), "  Start: %.4f, %.4f, %.4f\r\n", sample_buffer[0], sample_buffer[1], sample_buffer[2]);
+                    vPrintString(buf);
+                    // 중간 3개
+                    snprintf(buf, sizeof(buf), "  Mid:   %.4f, %.4f, %.4f\r\n", sample_buffer[1023], sample_buffer[1024], sample_buffer[1025]);
+                    vPrintString(buf);
+                    // 마지막 3개
+                    snprintf(buf, sizeof(buf), "  End:   %.4f, %.4f, %.4f\r\n", sample_buffer[2045], sample_buffer[2046], sample_buffer[2047]);
+                    vPrintString(buf);
+                  vPrintString("Data collected. Giving semaphore to model task.\r\n");
+                  xSemaphoreGive(xDataReadySemaphore);
+                  collected_samples = 0;
+                  break;
+               }
+            }
+            // 다음 데이터 패킷을 받기 위해 수신 요청을 다시 제출
             (void)USBH_IsocReceiveData(&hUsbHostFS,
                                        buf,
                                        audio_handle->microphone.frame_length,
                                        audio_handle->microphone.Pipe);
-
-//				if (collected_samples >= SAMPLES_TO_SAVE) {
-//					for (int i = 0; i < SAMPLES_TO_SAVE; i++) {
-////                            	// 헤더 추가 부분
-////                                uint8_t packet[6]; // 헤더 2 + int32 4
-////                                packet[0] = 0xAA;
-////                                packet[1] = 0x55;
-////                                memcpy(&packet[2], &sample_val, sizeof(float));
-//
-//						HAL_UART_Transmit(&huart2, sample_buffer, SAMPLES_TO_SAVE * sizeof(float), HAL_MAX_DELAY); // 헤더 없는 버전
-////						HAL_UART_Transmit(&huart2, packet, sizeof(packet), HAL_MAX_DELAY); // 헤더 있는 버전
-//						collected_samples = 0;
-//					}
-//				}
-		} //taskYIELD()
-	}
+        	}
+        else{
+//        	vTaskDelay(pdMS_TO_TICKS(1));
+        }
+   }
 }
-//void vUSBReadTask(void *pvParameters)
-//{
-//    AUDIO_HandleTypeDef *audio_handle;
-//    uint8_t *buf;
-//    static int32_t sample_buffer[SAMPLES_TO_SAVE];
-//    int collected = 0;
-//
-//    // USB 준비 대기
-//    while (Appli_state != APPLICATION_READY) {
-//        vTaskDelay(pdMS_TO_TICKS(50));
-//    }
-//
-//    audio_handle = (AUDIO_HandleTypeDef *)hUsbHostFS.pActiveClass->pData;
-//    if (!(audio_handle && audio_handle->microphone.supported)) {
-//        vPrintString("Audio mic not supported.\r\n");
-//        vTaskDelete(NULL);
-//    }
-//
-//    buf = audio_handle->microphone.buf;
-//    uint8_t pipe = audio_handle->microphone.Pipe;
-//    uint16_t flen = audio_handle->microphone.frame_length; // 보통 288B/1ms
-//    // 최초 제출
-//    USBH_IsocReceiveData(&hUsbHostFS, buf, flen, pipe);
-//
-//    for (;;) {
-//        USBH_URBStateTypeDef s = USBH_LL_GetURBState(&hUsbHostFS, pipe);
-//        if (s == USBH_URB_DONE) {
-//            // 1ms 분량 도착 → 처리
-//            int frames_in_buf = flen / FRAME_SIZE; // FRAME_SIZE = 6B(24bit*2ch)
-//            for (int i = 0; i < frames_in_buf; i += DOWNSAMPLE_FACTOR) {
-//                if (collected < SAMPLES_TO_SAVE) {
-//                    int32_t v = convert24bitToInt32(&buf[i * FRAME_SIZE]);
-//                    sample_buffer[collected++] = v;
-//                }
-//                if (collected >= SAMPLES_TO_SAVE) {
-//                    // 2048개 모이면 UART 전송
-//                    for (int k = 0; k < SAMPLES_TO_SAVE; k++) {
-//                        float fv = (float)sample_buffer[k] * SCALE_FACTOR;
-//                        uint8_t packet[6] = {0xAA, 0x55, 0,0,0,0};
-//                        memcpy(&packet[2], &fv, sizeof(float));
-//                        HAL_UART_Transmit(&huart2, packet, sizeof(packet), HAL_MAX_DELAY);
-//                    }
-//                    collected = 0;
-//                }
-//            }
-//            // 다음 프레임 즉시 재제출(지연 금지)
-//            USBH_IsocReceiveData(&hUsbHostFS, buf, flen, pipe);
-//        } else if (s == USBH_URB_NOTREADY || s == USBH_URB_IDLE) {
-//            // 아직 도착 전: 잠깐 양보만
-//            taskYIELD();
-//        } else if (s == USBH_URB_ERROR || s == USBH_URB_STALL) {
-//            // 에러 처리 후 재시도
-//            USBH_IsocReceiveData(&hUsbHostFS, buf, flen, pipe);
-//        }
-//    }
-//}
 
 
 // LCD Task
@@ -506,54 +428,58 @@ void modelTask(void *pvParameters){
     const ai_handle acts[] = { activations };
     err = ai_frfconv_create_and_init(&frfconv, acts, NULL);
     if (err.type != AI_ERROR_NONE) {
-    	vPrintString("ai init_and_create error\n");
-        return -1;
+       vPrintString("ai init_and_create error\n");
     }
 
     if (ai_frfconv_get_report(frfconv, &report) != true) {
-    	vPrintString("ai get report error\n");
-        return -1;
+       vPrintString("ai get report error\n");
     }
 
     for (;;){
-		char buf[128];
+       if (xSemaphoreTake(xDataReadySemaphore, portMAX_DELAY) == pdTRUE) {
+          vPrintString("Semaphore received. Model task is running...\r\n");
+          memcpy(in_data, sample_buffer, sizeof(float) * SAMPLES_TO_SAVE);
 
-		ai_input = &report.inputs[0];
-		ai_output = &report.outputs[0];
+          vPrintString("[ModelTask] Copied Data:\r\n");
+          char buf[128];
+          // 처음 3개
+          snprintf(buf, sizeof(buf), "  Start: %.4f, %.4f, %.4f\r\n", in_data[0], in_data[1], in_data[2]);
+          vPrintString(buf);
+          // 중간 3개
+          snprintf(buf, sizeof(buf), "  Mid:   %.4f, %.4f, %.4f\r\n", in_data[1023], in_data[1024], in_data[1025]);
+          vPrintString(buf);
+          // 마지막 3개
+          snprintf(buf, sizeof(buf), "  End:   %.4f, %.4f, %.4f\r\n", in_data[2045], in_data[2046], in_data[2047]);
+          vPrintString(buf);
 
+            ai_i32 n_batch;
 
-		srand(1);
-		for (int i = 0; i < AI_FRFCONV_IN_1_SIZE; i++) {
-		    in_data[i] = (float)rand() / (float)RAND_MAX;
-		}
+            ai_input = &report.inputs[0];
+            ai_output = &report.outputs[0];
 
-		ai_i32 n_batch;
+//          ai_input = ai_frfconv_inputs_get(frfconv, NULL);
+//          ai_output = ai_frfconv_outputs_get(frfconv, NULL);
 
-		ai_input = ai_frfconv_inputs_get(frfconv, NULL);
-		ai_output = ai_frfconv_outputs_get(frfconv, NULL);
+            ai_input[0].data = AI_HANDLE_PTR(in_data);
+            ai_output[0].data = AI_HANDLE_PTR(out_data);
 
-		ai_input[0].data = AI_HANDLE_PTR(in_data);
-		ai_output[0].data = AI_HANDLE_PTR(out_data);
+            n_batch = ai_frfconv_run(frfconv, &ai_input[0], &ai_output[0]);
+            if (n_batch != 1) {
+               ai_error err = ai_frfconv_get_error(frfconv);
+               int len = snprintf(buf, sizeof(buf), "ai run error %d, %d\r\n", err.type, err.code);
+               HAL_UART_Transmit(&huart2, (uint8_t*)buf, len, HAL_MAX_DELAY);
+                }
 
-		n_batch = ai_frfconv_run(frfconv, &ai_input[0], &ai_output[0]);
-		if (n_batch != 1) {
-			ai_error err = ai_frfconv_get_error(frfconv);
+            int len = snprintf(buf, sizeof(buf), "\r\nInference output: ");
+            HAL_UART_Transmit(&huart2, (uint8_t*)buf, len, HAL_MAX_DELAY);
 
-			char buf[128];
-			int len = snprintf(buf, sizeof(buf), "ai run error %d, %d\r\n", err.type, err.code);
-			HAL_UART_Transmit(&huart2, (uint8_t*)buf, len, HAL_MAX_DELAY);
-		}
-
-		int len = snprintf(buf, sizeof(buf), "\r\nInference output..\r\n");
-		HAL_UART_Transmit(&huart2, (uint8_t*)buf, len, HAL_MAX_DELAY);
-
-		// 출력 값 반복
-		for (int i = 0; i < AI_FRFCONV_OUT_1_SIZE; i++) {
-			float y_val = (float)out_data[i];
-			len = snprintf(buf, sizeof(buf), "%.2f,", y_val);
-			HAL_UART_Transmit(&huart2, (uint8_t*)buf, len, HAL_MAX_DELAY);
-		}
-		vTaskDelay(pdMS_TO_TICKS(500));
+            for (int i = 0; i < AI_FRFCONV_OUT_1_SIZE; i++) {
+                float y_val = (float)out_data[i];
+                len = snprintf(buf, sizeof(buf), "%.2f,", y_val);
+                HAL_UART_Transmit(&huart2, (uint8_t*)buf, len, HAL_MAX_DELAY);
+            }
+             vPrintString("\r\n");
+       }
     }
 
 }
