@@ -23,6 +23,7 @@ def main(config, args):
     log_file = f'log_per_acc_{ep}.txt'
     cm_name = f'confusion_matrix_{ep}.png'
 
+    # Data preparation
     data_root_dirs = os.path.join(config.dataset_root)
 
     Cylindrical_dirs = funs.get_bearing_paths(data_root_dirs, 'CylindricalRoller', config.rpm, config.sampling_rate)
@@ -38,8 +39,10 @@ def main(config, args):
     print("concat dataframes...")
     all_df = pd.concat([Cylindrical_df, DepGroove_df, Tapered_df], ignore_index=True)
 
+    # Split the dataframe into train, validation, and test sets
     train_df, val_df, test_df = funs.split_dataframe(all_df, 0.6, 0.2)
 
+    # Build data
     train_data, train_label = funs.build_from_dataframe(train_df, config.sample_size, config.overlap, False)
     val_data, val_label = funs.build_from_dataframe(val_df, config.sample_size, config.overlap, False)
     test_data, test_label = funs.build_from_dataframe(test_df, config.sample_size, config.overlap, False)
@@ -48,6 +51,7 @@ def main(config, args):
     tf_data = transforms.Compose([funs.processing.NpToTensor(), funs.processing.ToSignal()])
     tf_label = transforms.Compose([funs.processing.NpToTensor()])
 
+    # Dataset & Dataloader
     train_dataset = funs.NumpyDataset(train_data, train_label, transform=tf_data, target_transform=tf_label)
     val_dataset = funs.NumpyDataset(val_data, val_label, transform=tf_data, target_transform=tf_label)
     test_dataset = funs.NumpyDataset(test_data, test_label, transform=tf_data, target_transform=tf_label)
@@ -56,20 +60,23 @@ def main(config, args):
     val_loader = funs.get_dataloader(val_dataset, config.batch_size, False)
     test_loader = funs.get_dataloader(test_dataset, config.batch_size, False)
 
+
+    # Model, Optimizer, Loss
     n_classes = all_df["label"].max() - all_df["label"].min() + 1
     FRFconv_TDS = model.Mynet2(n_classes=n_classes).to(device)
 
     optimizer = Adam(FRFconv_TDS.parameters(), lr = float(config.learning_rate))
     loss = CrossEntropyLoss()
 
+    # Train & Test
     trainer = funs.Trainer(FRFconv_TDS, loss, optimizer, device, train_loader, val_loader)
-    # _, _ = trainer.train(epoch=ep)
-    # trainer.save(config.model_root, model_name)
+    _, _ = trainer.train(epoch=ep)              # train
+    trainer.save(config.model_root, model_name) # save the trained model
 
     model_path = f'{config.model_root}/{model_name}.pt'
-    trainer.model.load_state_dict(torch.load(model_path, weights_only=True))
+    trainer.model.load_state_dict(torch.load(model_path, weights_only=True))        # load the trained model
 
-    fault_label_list, test_loss, predicted_label_list = trainer.test(test_loader)
+    fault_label_list, test_loss, predicted_label_list = trainer.test(test_loader)   # test
 
     # acc per class logging
     funs.log_class_acc(config.log_root, fault_label_list, predicted_label_list, f'{log_file}')
