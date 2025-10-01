@@ -63,8 +63,8 @@ def main(config, args):
     loss = CrossEntropyLoss()
 
     trainer = funs.Trainer(FRFconv_TDS, loss, optimizer, device, train_loader, val_loader)
-    _, _ = trainer.train(epoch=ep)
-    trainer.save(config.model_root, model_name)
+    # _, _ = trainer.train(epoch=ep)
+    # trainer.save(config.model_root, model_name)
 
     model_path = f'{config.model_root}/{model_name}.pt'
     trainer.model.load_state_dict(torch.load(model_path, weights_only=True))
