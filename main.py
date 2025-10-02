@@ -16,28 +16,37 @@ def main(config, args):
     device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
     print('device =', device)
 
-    ep = args.epochs
+    # Argument setting
+    aEp = args.epochs
+    aRpm = args.rpm
+    aBearingType = "DeepGrooveBall"
 
     # name setting
-    model_name = f'FRFconv-TDS_{ep}'
-    log_file = f'log_per_acc_{ep}.txt'
-    cm_name = f'confusion_matrix_{ep}.png'
+    model_name = f'FRFconv-TDS_{aEp}_rpm{aRpm}_{aBearingType}'
+    log_file = f'log_per_acc_{aEp}_rpm{aRpm}_{aBearingType}.txt'
+    cm_name = f'confusion_matrix_{aEp}_rpm{aRpm}_{aBearingType}.png'
 
     # Data preparation
     data_root_dirs = os.path.join(config.dataset_root)
 
-    Cylindrical_dirs = funs.get_bearing_paths(data_root_dirs, 'CylindricalRoller', config.rpm, config.sampling_rate)
-    DepGroove_dirs = funs.get_bearing_paths(data_root_dirs, 'DeepGrooveBall', config.rpm, config.sampling_rate)
-    Tapered_dirs = funs.get_bearing_paths(data_root_dirs, 'TaperedRoller', config.rpm, config.sampling_rate)
+    if aRpm: # given rpm 
+        # Cylindrical_dirs = funs.get_bearing_paths(data_root_dirs, 'CylindricalRoller', [aRpm], config.sampling_rate)
+        DepGroove_dirs = funs.get_bearing_paths(data_root_dirs, 'DeepGrooveBall', [aRpm], config.sampling_rate)
+        # Tapered_dirs = funs.get_bearing_paths(data_root_dirs, 'TaperedRoller', [aRpm].rpm, config.sampling_rate)
+    else: # default rpm list
+        # Cylindrical_dirs = funs.get_bearing_paths(data_root_dirs, 'CylindricalRoller', config.rpm, config.sampling_rate)
+        DepGroove_dirs = funs.get_bearing_paths(data_root_dirs, 'DeepGrooveBall', config.rpm, config.sampling_rate)
+        # Tapered_dirs = funs.get_bearing_paths(data_root_dirs, 'TaperedRoller', config.rpm, config.sampling_rate)
 
     print("Making dataframes...")
 
-    Cylindrical_df = funs.make_dataframe(config, Cylindrical_dirs)
+    # Cylindrical_df = funs.make_dataframe(config, Cylindrical_dirs)
     DepGroove_df =funs.make_dataframe(config, DepGroove_dirs)
-    Tapered_df = funs.make_dataframe(config, Tapered_dirs)  
+    # Tapered_df = funs.make_dataframe(config, Tapered_dirs)  
 
     print("concat dataframes...")
-    all_df = pd.concat([Cylindrical_df, DepGroove_df, Tapered_df], ignore_index=True)
+    # all_df = pd.concat([Cylindrical_df, DepGroove_df, Tapered_df], ignore_index=True)
+    all_df = DepGroove_df
 
     # Split the dataframe into train, validation, and test sets
     train_df, val_df, test_df = funs.split_dataframe(all_df, 0.6, 0.2)
@@ -70,7 +79,7 @@ def main(config, args):
 
     # Train & Test
     trainer = funs.Trainer(FRFconv_TDS, loss, optimizer, device, train_loader, val_loader)
-    _, _ = trainer.train(epoch=ep)              # train
+    _, _ = trainer.train(epoch=aEp)              # train
     trainer.save(config.model_root, model_name) # save the trained model
 
     model_path = f'{config.model_root}/{model_name}.pt'

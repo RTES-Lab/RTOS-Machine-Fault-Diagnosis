@@ -84,6 +84,9 @@ def log_class_acc(root, fault_label_list, predicted_label_list, log_file):
     print("Class-wise Accuracy:")
     for cls_idx, acc in enumerate(per_class_acc):
         print(f"Class {cls_idx}: {acc:.5f}")
+        
+    mean_acc = np.mean(per_class_acc)
+    print(f"Mean Class Accuracy: {mean_acc:.5f}")
 
     # 로그 파일 기록
     now = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
@@ -98,12 +101,26 @@ def log_class_acc(root, fault_label_list, predicted_label_list, log_file):
 def parse_arguments():
     parser = argparse.ArgumentParser(description="KSNVE challenge")
     
-    # latent space 인자
     parser.add_argument(
         "--epochs", 
         type=int, 
         default=100,
         help="Number of training epochs (예: --epochs 100, 기본값: 100)"
+    )
+
+    parser.add_argument(
+        "--rpmlist",
+        type=int,
+        nargs='+',  
+        default=[600, 800, 1000, 1200, 1400, 1600],
+        help="RPM value list (예: --rpm 600 800 1000, 기본값: 1400)"
+    )
+
+    parser.add_argument(
+        "--rpm",
+        type=int,
+        default=1400,
+        help="RPM value (예: --rpm 1400, 기본값: 1400)"
     )
         
     args = parser.parse_args()
