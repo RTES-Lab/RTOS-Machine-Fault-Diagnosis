@@ -1,9 +1,13 @@
 seed: 42
 
-dataset_root: './dataset'
+dataset_root_uos: './dataset'
+dataset_root_st: './data_st'
 model_root: './models'
+model_root_st: './models_st'
 log_root: './logs'
+log_root_st: './logs_st'
 pic_root: './pics'
+pic_root_st: './pics_st'
 
 sampling_rate: 16000
 

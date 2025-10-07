@@ -3,7 +3,10 @@ rtos_study_model/
 
 # UOS dataset 
 dataset/
+# ST dataset
+data_st
 
 __pycache__/
 
 logs
+logs_st

@@ -27,7 +27,7 @@ def main(config, args):
     cm_name = f'confusion_matrix_{aEp}_rpm{aRpm}_{aBearingType}.png'
 
     # Data preparation
-    data_root_dirs = os.path.join(config.dataset_root)
+    data_root_dirs = os.path.join(config.dataset_root_uos)
 
     if aRpm: # given rpm 
         # Cylindrical_dirs = funs.get_bearing_paths(data_root_dirs, 'CylindricalRoller', [aRpm], config.sampling_rate)
