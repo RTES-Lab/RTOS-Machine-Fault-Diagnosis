@@ -94,7 +94,6 @@ extern USBH_HandleTypeDef hUsbHostFS;
 SemaphoreHandle_t xDataReadySemaphore;
 // USBReadTask에서 수집하고 modelTask에서 사용할 공유 데이터 버퍼
 static float sample_buffer[SAMPLES_TO_SAVE];
-
 extern UART_HandleTypeDef huart2;
 
 static ai_u8 activations[AI_FRFCONV_DATA_ACTIVATIONS_SIZE];
@@ -116,7 +115,6 @@ void MX_USB_HOST_Process(void);
    // #include "i2c.h"
    // static void MX_I2C1_Init(void);
 */
-
 int32_t convert24bitToInt32(uint8_t *p);
 
 /* 프린트/태스크/헬퍼 함수 프로토타입 */
@@ -169,8 +167,8 @@ int main(void)
   const char *boot = "[BOOT] UART ready\r\n";
   HAL_UART_Transmit(&huart2, (uint8_t*)boot, strlen(boot), 100);
 
-//  MX_I2C1_Init();
-//  lcd_init();
+  MX_I2C1_Init();
+
 
   xDataReadySemaphore = xSemaphoreCreateBinary();
   if (xDataReadySemaphore == NULL) {
@@ -178,12 +176,13 @@ int main(void)
       while(1); // 시스템 정지
   }
 
-  xTaskCreate(vUSBReadTask, "USBRead",  1024,  NULL, 1, NULL);
-//  xTaskCreate(vLCDTask, "LCD Task", 512, NULL, 3, NULL);
-  xTaskCreate(modelTask, "model Task", 1024*2, NULL, 2, NULL);
+//  xTaskCreate(vUSBReadTask, "USBRead",  1024,  NULL, 1, NULL);
+  xTaskCreate(vLCDTask, "LCD Task", 512, NULL, 3, NULL);
+//  xTaskCreate(modelTask, "model Task", 1024*2, NULL, 2, NULL);
 
   // HAL_Delay 등 기능은 무조건 RTOS 시작 후 실행되게 하기 위해 초기화 늦게 수행
   MX_USB_HOST_Init();
+  lcd_init();
 
   vTaskStartScheduler();
 
@@ -193,6 +192,7 @@ int main(void)
   /* USER CODE BEGIN WHILE */
   while (1)
   {
+
     /* USER CODE END WHILE */
     /* USER CODE BEGIN 3 */
   }
@@ -404,6 +404,7 @@ void vUSBReadTask(void *pvParameters)
 // LCD Task
 void vLCDTask(void *pvParameters)
 {
+
     for (;;)
     {
         lcd_clear();
@@ -412,9 +413,8 @@ void vLCDTask(void *pvParameters)
         lcd_send_string("Hello World!");
 
         lcd_put_cursor(1, 0);
-        lcd_send_string("From STM32Nucleo");
+        lcd_send_string("From SR");
 
-        vTaskDelay(pdMS_TO_TICKS(50));
     }
 }
 

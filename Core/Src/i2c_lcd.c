@@ -1,6 +1,9 @@
 #include "i2c_lcd.h"
 #include "i2c.h"
 
+#include "FreeRTOS.h"
+#include "task.h"
+
 // --- 매핑 A: 가장 흔한 유형 (현재 코드 전제와 동일)
 #define LCD_BL 0x08
 #define LCD_EN 0x04
@@ -19,6 +22,7 @@
 void lcd_init(void)
 {
     // 4-bit initialization
+
     HAL_Delay(50);  // Wait for >40ms
     lcd_send_cmd(0x30);
     HAL_Delay(5);   // Wait for >4.1ms
