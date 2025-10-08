@@ -47,6 +47,7 @@
 /* USER CODE BEGIN Includes */
 #include <string.h>
 #include <stdio.h>
+#include <limits.h> // for UINT_MAX
 
 #include "FreeRTOS.h"
 #include "task.h"
@@ -404,17 +405,90 @@ void vUSBReadTask(void *pvParameters)
 // LCD Task
 void vLCDTask(void *pvParameters)
 {
+    // --- 측정 부분 ---
+    TickType_t execution_times[100];
+    for (int i = 0; i < 100; i++)
+    {
+        TickType_t start_time = xTaskGetTickCount();
 
+        lcd_clear();
+        lcd_put_cursor(0, 0);
+        lcd_send_string("Machine cond:");
+        lcd_put_cursor(1, 0);
+        lcd_send_string("Outer Race");
+
+        TickType_t end_time = xTaskGetTickCount();
+        execution_times[i] = end_time - start_time;
+
+        vTaskDelay(pdMS_TO_TICKS(50));
+    }
+
+    // --- 통계 계산 부분 ---
+
+    // 1. 변수들을 계산 루프 바깥에 선언합니다.
+    TickType_t min_time_ticks = (TickType_t)UINT_MAX;
+    TickType_t max_time_ticks = 0;
+    uint64_t sum_time_ticks = 0;
+    double variance_ticks = 0.0; // variance 변수를 여기서 선언!
+    double std_dev_ticks = 0.0;
+
+    // 2. 첫 번째 루프: 합계, 최소, 최대값만 계산합니다.
+    for (int i = 0; i < 100; i++)
+    {
+        TickType_t current_time = execution_times[i];
+        sum_time_ticks += current_time;
+        if (current_time < min_time_ticks) min_time_ticks = current_time;
+        if (current_time > max_time_ticks) max_time_ticks = current_time;
+    }
+
+    // 3. 평균을 계산합니다. (루프가 끝난 후!)
+    double avg_time_ticks = (double)sum_time_ticks / 100;
+
+    // 4. 두 번째 루프: 분산을 계산합니다. (평균이 계산된 후!)
+    double sum_of_squared_diffs = 0.0;
+    for (int i = 0; i < 100; i++) {
+        double diff = (double)execution_times[i] - avg_time_ticks;
+        sum_of_squared_diffs += diff * diff;
+    }
+    variance_ticks = sum_of_squared_diffs / 100;
+    std_dev_ticks = sqrt(variance_ticks); // 표준편차도 계산
+
+    // 5. ms 단위로 변환합니다.
+    float conversion_factor = 1000.0f / configTICK_RATE_HZ;
+    float avg_time_ms = (float)avg_time_ticks * conversion_factor;
+    float min_time_ms = (float)min_time_ticks * conversion_factor;
+    float max_time_ms = (float)max_time_ticks * conversion_factor;
+    float variance_ms = (float)variance_ticks * (conversion_factor * conversion_factor); // 분산은 시간 단위의 제곱이므로 변환 계수를 두 번 곱해야 함
+    float std_dev_ms = (float)std_dev_ticks * conversion_factor;
+
+    // 6. 최종 결과를 출력합니다.
+    char tx_buffer[100];
+    int len = 0;
+
+    // 2. sprintf로 문자열을 만들고 HAL_UART_Transmit으로 전송 (반복)
+    len = sprintf(tx_buffer, "------ Execution Time Stats (Unit: ms) ------\r\n");
+    HAL_UART_Transmit(&huart2, (uint8_t*)tx_buffer, len, HAL_MAX_DELAY);
+
+    len = sprintf(tx_buffer, "Average:       %.3f ms\r\n", avg_time_ms);
+    HAL_UART_Transmit(&huart2, (uint8_t*)tx_buffer, len, HAL_MAX_DELAY);
+
+    len = sprintf(tx_buffer, "Std Deviation: %.3f ms\r\n", std_dev_ms);
+    HAL_UART_Transmit(&huart2, (uint8_t*)tx_buffer, len, HAL_MAX_DELAY);
+
+    len = sprintf(tx_buffer, "Minimum:       %.3f ms\r\n", min_time_ms);
+    HAL_UART_Transmit(&huart2, (uint8_t*)tx_buffer, len, HAL_MAX_DELAY);
+
+    len = sprintf(tx_buffer, "Maximum:       %.3f ms\r\n", max_time_ms);
+    HAL_UART_Transmit(&huart2, (uint8_t*)tx_buffer, len, HAL_MAX_DELAY);
+
+    len = sprintf(tx_buffer, "-------------------------------------------------\r\n");
+    HAL_UART_Transmit(&huart2, (uint8_t*)tx_buffer, len, HAL_MAX_DELAY);
+
+
+    // 7. 작업 완료 후 태스크를 무한정 대기 상태로 전환
     for (;;)
     {
-        lcd_clear();
-
-        lcd_put_cursor(0, 0);
-        lcd_send_string("Hello World!");
-
-        lcd_put_cursor(1, 0);
-        lcd_send_string("From SR");
-
+        vTaskDelay(portMAX_DELAY);
     }
 }
 
