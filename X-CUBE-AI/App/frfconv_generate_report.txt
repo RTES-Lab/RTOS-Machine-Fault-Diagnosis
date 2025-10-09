@@ -1,33 +1,33 @@
 ST Edge AI Core v2.2.0-20266 2adc00962
-Created date          : 2025-09-25 21:44:37
-Parameters            : generate --target stm32f4 --name frfconv -m C:/Users/user/Downloads/FRFconv-TDS_onnx.onnx --compression high --verbosity 1 --workspace C:/Users/user/AppData/Local/Temp/mxAI_workspace345848545249005683731138804411164 --output C:/Users/user/.stm32cubemx/frfconv_output
+Created date          : 2025-10-09 14:29:36
+Parameters            : generate --target stm32f4 --name frfconv -m C:/Users/user/Downloads/ST_FRFconv-TDS_1000.onnx --compression high --verbosity 1 --workspace C:/Users/user/AppData/Local/Temp/mxAI_workspace6182040432853007706781049855475920 --output C:/Users/user/.stm32cubemx/frfconv_output
 
 Exec/report summary (generate)
-----------------------------------------------------------------------------------------------------------
-model file         :   C:\Users\user\Downloads\FRFconv-TDS_onnx.onnx                                      
-type               :   onnx                                                                               
-c_name             :   frfconv                                                                            
-compression        :   high                                                                               
-options            :   allocate-inputs, allocate-outputs                                                  
-optimization       :   balanced                                                                           
-target/series      :   stm32f4                                                                            
-workspace dir      :   C:\Users\user\AppData\Local\Temp\mxAI_workspace345848545249005683731138804411164   
-output dir         :   C:\Users\user\.stm32cubemx\frfconv_output                                          
-model_fmt          :   float                                                                              
-model_name         :   FRFconvTDS_onnx                                                                    
-model_hash         :   0x2f69029b2897e290880dadb45b6292cf                                                 
-params #           :   8,830 items (34.49 KiB)                                                            
-----------------------------------------------------------------------------------------------------------
-input 1/1          :   'input', f32(1x2048x1), 8.00 KBytes, activations                                   
-output 1/1         :   'output', f32(1x8), 32 Bytes, activations                                          
-macc               :   1,905,462                                                                          
-weights (ro)       :   35,056 B (34.23 KiB) (1 segment) / -264(-0.7%) vs float model                      
-activations (rw)   :   32,776 B (32.01 KiB) (1 segment) *                                                 
-ram (total)        :   32,776 B (32.01 KiB) = 32,776 + 0 + 0                                              
-----------------------------------------------------------------------------------------------------------
+-----------------------------------------------------------------------------------------------------------
+model file         :   C:\Users\user\Downloads\ST_FRFconv-TDS_1000.onnx                                    
+type               :   onnx                                                                                
+c_name             :   frfconv                                                                             
+compression        :   high                                                                                
+options            :   allocate-inputs, allocate-outputs                                                   
+optimization       :   balanced                                                                            
+target/series      :   stm32f4                                                                             
+workspace dir      :   C:\Users\user\AppData\Local\Temp\mxAI_workspace6182040432853007706781049855475920   
+output dir         :   C:\Users\user\.stm32cubemx\frfconv_output                                           
+model_fmt          :   float                                                                               
+model_name         :   ST_FRFconvTDS_1000                                                                  
+model_hash         :   0x26475cc1b24c812121e420354d70db54                                                  
+params #           :   8,830 items (34.49 KiB)                                                             
+-----------------------------------------------------------------------------------------------------------
+input 1/1          :   'input', f32(1x2048x1), 8.00 KBytes, activations                                    
+output 1/1         :   'output', f32(1x8), 32 Bytes, activations                                           
+macc               :   1,905,462                                                                           
+weights (ro)       :   35,056 B (34.23 KiB) (1 segment) / -264(-0.7%) vs float model                       
+activations (rw)   :   32,776 B (32.01 KiB) (1 segment) *                                                  
+ram (total)        :   32,776 B (32.01 KiB) = 32,776 + 0 + 0                                               
+-----------------------------------------------------------------------------------------------------------
 (*) 'input'/'output' buffers are allocated in the activations buffer
 
-Model name - FRFconvTDS_onnx
+Model name - ST_FRFconvTDS_1000
 ------ ---------------------------------------------------------- ------------------ ------------- --------- -------------------------------- --- -------------- -------------------- ---------------------------- 
 m_id   layer (type,original)                                      oshape             param/size         macc                     connected to   | c_size         c_macc               c_type                       
 ------ ---------------------------------------------------------- ------------------ ------------- --------- -------------------------------- --- -------------- -------------------- ---------------------------- 
@@ -225,7 +225,7 @@ model/c-model: macc=1,917,739/1,905,462 -12,277(-0.6%) weights=35,320/35,056 -26
 
 Generated C-graph summary
 ------------------------------------------------------------------------------------------------------------------------
-model name            : FRFconvTDS_onnx
+model name            : ST_FRFconvTDS_1000
 c-name                : frfconv
 c-node #              : 74
 c-array #             : 126

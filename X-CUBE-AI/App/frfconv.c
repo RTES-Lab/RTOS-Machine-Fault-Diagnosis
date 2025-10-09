@@ -2,7 +2,7 @@
   ******************************************************************************
   * @file    frfconv.c
   * @author  AST Embedded Analytics Research Platform
-  * @date    2025-09-25T21:44:35+0900
+  * @date    2025-10-09T14:29:35+0900
   * @brief   AI Tool Automatic Code Generator for Embedded NN computing
   ******************************************************************************
   * @attention
@@ -35,14 +35,14 @@
 #define AI_NET_OBJ_INSTANCE g_frfconv
  
 #undef AI_FRFCONV_MODEL_SIGNATURE
-#define AI_FRFCONV_MODEL_SIGNATURE     "0x2f69029b2897e290880dadb45b6292cf"
+#define AI_FRFCONV_MODEL_SIGNATURE     "0x26475cc1b24c812121e420354d70db54"
 
 #ifndef AI_TOOLS_REVISION_ID
 #define AI_TOOLS_REVISION_ID     ""
 #endif
 
 #undef AI_TOOLS_DATE_TIME
-#define AI_TOOLS_DATE_TIME   "2025-09-25T21:44:35+0900"
+#define AI_TOOLS_DATE_TIME   "2025-10-09T14:29:35+0900"
 
 #undef AI_TOOLS_COMPILE_TIME
 #define AI_TOOLS_COMPILE_TIME    __DATE__ " " __TIME__
@@ -2998,7 +2998,7 @@ AI_NETWORK_OBJ_DECLARE(
     32776, NULL, NULL),
   AI_TENSOR_LIST_IO_OBJ_INIT(AI_FLAG_NONE, AI_FRFCONV_IN_NUM, &input_output),
   AI_TENSOR_LIST_IO_OBJ_INIT(AI_FLAG_NONE, AI_FRFCONV_OUT_NUM, &output_output),
-  &_Mul_2_output_0_layer, 0x2df29a8b, NULL)
+  &_Mul_2_output_0_layer, 0x6b7e4b74, NULL)
 
 #else
 
@@ -3018,7 +3018,7 @@ AI_NETWORK_OBJ_DECLARE(
   ),
   AI_TENSOR_LIST_IO_OBJ_INIT(AI_FLAG_NONE, AI_FRFCONV_IN_NUM, &input_output),
   AI_TENSOR_LIST_IO_OBJ_INIT(AI_FLAG_NONE, AI_FRFCONV_OUT_NUM, &output_output),
-  &_Mul_2_output_0_layer, 0x2df29a8b, NULL)
+  &_Mul_2_output_0_layer, 0x6b7e4b74, NULL)
 
 #endif	/*(AI_TOOLS_API_VERSION < AI_TOOLS_API_VERSION_1_5)*/
 
@@ -3393,7 +3393,7 @@ ai_bool ai_frfconv_get_info(
       .params            = AI_STRUCT_INIT,
       .activations       = AI_STRUCT_INIT,
       .n_nodes           = 0,
-      .signature         = 0x2df29a8b,
+      .signature         = 0x6b7e4b74,
     };
 
     if (!ai_platform_api_get_network_report(network, &r)) return false;
@@ -3441,7 +3441,7 @@ ai_bool ai_frfconv_get_report(
       .map_weights       = AI_STRUCT_INIT,
       .map_activations   = AI_STRUCT_INIT,
       .n_nodes           = 0,
-      .signature         = 0x2df29a8b,
+      .signature         = 0x6b7e4b74,
     };
 
     if (!ai_platform_api_get_network_report(network, &r)) return false;

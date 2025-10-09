@@ -39,13 +39,13 @@ Idx Name          Size      VMA       LMA       File off  Algn
                   CONTENTS, READONLY, DEBUGGING, OCTETS
  17 .debug_line   00023ff4  00000000  00000000  0006dab0  2**0
                   CONTENTS, READONLY, DEBUGGING, OCTETS
- 18 .debug_str    000a93c9  00000000  00000000  00091aa4  2**0
+ 18 .debug_str    000a93cc  00000000  00000000  00091aa4  2**0
                   CONTENTS, READONLY, DEBUGGING, OCTETS
- 19 .comment      00000086  00000000  00000000  0013ae6d  2**0
+ 19 .comment      00000086  00000000  00000000  0013ae70  2**0
                   CONTENTS, READONLY
- 20 .debug_frame  00007988  00000000  00000000  0013aef4  2**2
+ 20 .debug_frame  00007988  00000000  00000000  0013aef8  2**2
                   CONTENTS, READONLY, DEBUGGING, OCTETS
- 21 .debug_line_str 00000055  00000000  00000000  0014287c  2**0
+ 21 .debug_line_str 00000055  00000000  00000000  00142880  2**0
                   CONTENTS, READONLY, DEBUGGING, OCTETS
 
 Disassembly of section .text:
@@ -34602,7 +34602,7 @@ ai_bool ai_frfconv_get_report(
  800d938:	f8c7 3088 	str.w	r3, [r7, #136]	@ 0x88
       .map_activations   = AI_STRUCT_INIT,
       .n_nodes           = 0,
-      .signature         = 0x2df29a8b,
+      .signature         = 0x6b7e4b74,
     };
 
     if (!ai_platform_api_get_network_report(network, &r)) return false;
@@ -34645,7 +34645,7 @@ ai_bool ai_frfconv_get_report(
  800d98c:	08017768 	.word	0x08017768
  800d990:	08017780 	.word	0x08017780
  800d994:	a1facade 	.word	0xa1facade
- 800d998:	2df29a8b 	.word	0x2df29a8b
+ 800d998:	6b7e4b74 	.word	0x6b7e4b74
 
 0800d99c <ai_frfconv_get_error>:
 
