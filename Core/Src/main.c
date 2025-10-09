@@ -659,12 +659,9 @@ void modelTask(void *pvParameters){
 
 			// 다음 측정을 위해 카운터를 0으로 초기화
 			measurement_count = 0;
-
 		}
     }
-
 }
-
 
 void vApplicationGetIdleTaskMemory( StaticTask_t **ppxIdleTaskTCBBuffer,
                                    StackType_t **ppxIdleTaskStackBuffer,
