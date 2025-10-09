@@ -47,7 +47,7 @@
 /* USER CODE BEGIN Includes */
 #include <string.h>
 #include <stdio.h>
-#include <limits.h> // for UINT_MAX
+#include <float.h>
 
 #include "FreeRTOS.h"
 #include "task.h"
@@ -82,6 +82,7 @@
 #define FRAME_SIZE (CHANNELS * BYTES_PER_SAMPLE)
 #define SCALE_FACTOR (0.10197f / (32550.0f * 1.02575f))
 #define DOWNSAMPLE_FACTOR 3
+#define CPU_CLOCK_HZ SystemCoreClock
 /* USER CODE END PM */
 
 /* Private variables ---------------------------------------------------------*/
@@ -125,6 +126,7 @@ void vUSBReadTask(void *pvParameters);
 void DumpHexUART(uint8_t *buf, uint16_t len);
 void modelTask(void *pvParameters);
 void vLCDTask(void *pvParameters);
+void vUSBhostTask(void *pvParameters);
 
 /* USER CODE END PFP */
 
@@ -156,6 +158,10 @@ int main(void)
   /* Configure the system clock */
   SystemClock_Config();
 
+  CoreDebug->DEMCR |= CoreDebug_DEMCR_TRCENA_Msk;    // 트레이스 엔진 클럭 활성화
+  DWT->CYCCNT = 0;                                  // 카운터 초기화
+  DWT->CTRL |= DWT_CTRL_CYCCNTENA_Msk;              // 사이클 카운터 활성화
+
   /* USER CODE BEGIN SysInit */
   /* 현재 구성 유지: HSI → PLL → SYSCLK=84MHz, PLLQ=7로 48MHz 확보 */
   /* USER CODE END SysInit */
@@ -177,9 +183,10 @@ int main(void)
       while(1); // 시스템 정지
   }
 
-//  xTaskCreate(vUSBReadTask, "USBRead",  1024,  NULL, 1, NULL);
-//  xTaskCreate(vLCDTask, "LCD Task", 512, NULL, 3, NULL);
-  xTaskCreate(modelTask, "model Task", 1024*2, NULL, 2, NULL);
+  xTaskCreate(vUSBReadTask, "USBRead",  1024,  NULL, 3, NULL);
+//  xTaskCreate(vUSBhostTask, "USB host process",  512,  NULL, 4, NULL);
+//  xTaskCreate(vLCDTask, "LCD Task", 512, NULL, 1, NULL);
+//  xTaskCreate(modelTask, "model Task", 1024*2, NULL, 2, NULL);
 
   // HAL_Delay 등 기능은 무조건 RTOS 시작 후 실행되게 하기 위해 초기화 늦게 수행
   MX_USB_HOST_Init();
@@ -325,11 +332,23 @@ void DumpHexUART(uint8_t *buf, uint16_t len)
     }
 }
 
+//void vUSBhostTask(void *pvParameters)
+//{
+//	for (;;) {
+//		MX_USB_HOST_Process();
+//		vTaskDelay(pdMS_TO_TICKS(1));
+//	}
+//
+//}
+
 /**
   * @brief  USB 가속도계로부터 데이터를 읽고 출력하는 태스크. 주기 10ms
   */
 void vUSBReadTask(void *pvParameters)
 {
+    TickType_t xLastWakeTime;
+    const TickType_t xFrequency = pdMS_TO_TICKS(100);
+    xLastWakeTime = xTaskGetTickCount();
     AUDIO_HandleTypeDef *audio_handle;
     uint8_t *buf;
 
@@ -337,9 +356,9 @@ void vUSBReadTask(void *pvParameters)
     static uint8_t isoc_submitted = 0;
 
 	#define NUM_MEASUREMENTS 100
-	static TickType_t execution_times[NUM_MEASUREMENTS];
+    float execution_times[NUM_MEASUREMENTS];
 	static int measurement_count = 0;
-	static TickType_t start_time = 0;
+	static uint32_t start_time = 0;
 
     for (;;) {
        MX_USB_HOST_Process();
@@ -372,7 +391,7 @@ void vUSBReadTask(void *pvParameters)
             for (int i = 0; i < frames_in_buf; i += DOWNSAMPLE_FACTOR){
                if (collected_samples < SAMPLES_TO_SAVE) {
                    if (collected_samples == 0) {
-                       start_time = xTaskGetTickCount();
+                	   start_time = DWT->CYCCNT;
                    }
                     int32_t sample_val = convert24bitToInt32(&buf[i * FRAME_SIZE]);
                     float scaled_val = (float)sample_val * SCALE_FACTOR;
@@ -380,10 +399,15 @@ void vUSBReadTask(void *pvParameters)
                }
                // 2048개 샘플이 모두 모였을 때
                if (collected_samples >= SAMPLES_TO_SAVE){
+                   char buf[128];
+                   // 처음 3개
+                   snprintf(buf, sizeof(buf), "  Start: %.4f, %.4f, %.4f\r\n", sample_buffer[0], sample_buffer[1], sample_buffer[2]);
+                   vPrintString(buf);
                    if (measurement_count < NUM_MEASUREMENTS) {
-                       TickType_t end_time = xTaskGetTickCount();
-                       execution_times[measurement_count] = end_time - start_time;
-                       measurement_count++;
+                	   uint32_t end_time = DWT->CYCCNT;
+                	   uint32_t cycles = end_time - start_time;
+						execution_times[measurement_count] = (float)cycles * 1000.0f / (float)CPU_CLOCK_HZ;
+						measurement_count++;
                    }
                   collected_samples = 0;
                   break;
@@ -398,58 +422,47 @@ void vUSBReadTask(void *pvParameters)
         else{
 //        	vTaskDelay(pdMS_TO_TICKS(1));
         }
-        if (measurement_count >= NUM_MEASUREMENTS) {
-                    char tx_buffer[128];
-                    int len = 0;
+		if (measurement_count >= NUM_MEASUREMENTS) {
+			char tx_buffer[128];
+			int len = 0;
 
-                    // 통계 계산
-                    TickType_t min_time_ticks = (TickType_t)UINT_MAX;
-                    TickType_t max_time_ticks = 0;
-                    uint64_t sum_time_ticks = 0;
-                    for (int i = 0; i < NUM_MEASUREMENTS; i++) {
-                        TickType_t current_time = execution_times[i];
-                        sum_time_ticks += current_time;
-                        if (current_time < min_time_ticks) min_time_ticks = current_time;
-                        if (current_time > max_time_ticks) max_time_ticks = current_time;
-                    }
+			// 통계 계산
+			float min_time_ticks = FLT_MAX;
+			float max_time_ticks = 0.0f;
+			float sum_time_ticks = 0.0f;
 
-                    double avg_time_ticks = (double)sum_time_ticks / NUM_MEASUREMENTS;
+			for (int i = 0; i < NUM_MEASUREMENTS; i++) {
+				float current_time = execution_times[i];
+				sum_time_ticks += current_time;
+				if (current_time < min_time_ticks) min_time_ticks = current_time;
+				if (current_time > max_time_ticks) max_time_ticks = current_time;
+			}
 
-                    double sum_of_squared_diffs = 0.0;
-                    for (int i = 0; i < NUM_MEASUREMENTS; i++) {
-                        double diff = (double)execution_times[i] - avg_time_ticks;
-                        sum_of_squared_diffs += diff * diff;
-                    }
-                    double variance_ticks = sum_of_squared_diffs / NUM_MEASUREMENTS;
-                    double std_dev_ticks = sqrt(variance_ticks);
+			double avg_time_ticks = (double)sum_time_ticks / NUM_MEASUREMENTS;
+			double sum_of_squared_diffs = 0.0;
+			for (int i = 0; i < NUM_MEASUREMENTS; i++) {
+				double diff = (double)execution_times[i] - avg_time_ticks;
+					sum_of_squared_diffs += diff * diff;
+			}
+			double variance_ticks = sum_of_squared_diffs / NUM_MEASUREMENTS;
+			double std_dev_ticks = sqrt(variance_ticks);
 
-                    // ms 단위 변환
-                    float conversion_factor = 1000.0f / configTICK_RATE_HZ;
-                    float avg_time_ms = (float)avg_time_ticks * conversion_factor;
-                    float min_time_ms = (float)min_time_ticks * conversion_factor;
-                    float max_time_ms = (float)max_time_ticks * conversion_factor;
-                    float std_dev_ms = (float)std_dev_ticks * conversion_factor;
-                    float variance_ms = (float)variance_ticks * (conversion_factor * conversion_factor);
+			// UART 출력
+			len = sprintf(tx_buffer, "\r\n------ USB sensing Time Stats ------\r\n");
+			HAL_UART_Transmit(&huart2, (uint8_t*)tx_buffer, len, HAL_MAX_DELAY);
+			len = sprintf(tx_buffer, "Average: %.3f ms\r\n", avg_time_ticks);
+			HAL_UART_Transmit(&huart2, (uint8_t*)tx_buffer, len, HAL_MAX_DELAY);
+			len = sprintf(tx_buffer, "Std Deviation: %.3f ms\r\n", std_dev_ticks);
+			HAL_UART_Transmit(&huart2, (uint8_t*)tx_buffer, len, HAL_MAX_DELAY);
+			len = sprintf(tx_buffer, "Minimum: %.3f ms\r\n", min_time_ticks);
+			HAL_UART_Transmit(&huart2, (uint8_t*)tx_buffer, len, HAL_MAX_DELAY);
+			len = sprintf(tx_buffer, "Maximum: %.3f ms\r\n", max_time_ticks);
+			HAL_UART_Transmit(&huart2, (uint8_t*)tx_buffer, len, HAL_MAX_DELAY);
 
-                    // UART 출력
-                    len = sprintf(tx_buffer, "\r\n------ 2048 Samples Collection Time Stats ------\r\n");
-                    HAL_UART_Transmit(&huart2, (uint8_t*)tx_buffer, len, HAL_MAX_DELAY);
-                    len = sprintf(tx_buffer, "Average:       %.3f ms\r\n", avg_time_ms);
-                    HAL_UART_Transmit(&huart2, (uint8_t*)tx_buffer, len, HAL_MAX_DELAY);
-                    len = sprintf(tx_buffer, "Std Deviation: %.3f ms\r\n", std_dev_ms);
-                    HAL_UART_Transmit(&huart2, (uint8_t*)tx_buffer, len, HAL_MAX_DELAY);
-                    len = sprintf(tx_buffer, "Minimum:       %.3f ms\r\n", min_time_ms);
-                    HAL_UART_Transmit(&huart2, (uint8_t*)tx_buffer, len, HAL_MAX_DELAY);
-                    len = sprintf(tx_buffer, "Maximum:       %.3f ms\r\n", max_time_ms);
-                    HAL_UART_Transmit(&huart2, (uint8_t*)tx_buffer, len, HAL_MAX_DELAY);
-                    len = sprintf(tx_buffer, "Variance:      %.3f ms^2\r\n", variance_ms);
-                    HAL_UART_Transmit(&huart2, (uint8_t*)tx_buffer, len, HAL_MAX_DELAY);
-                    len = sprintf(tx_buffer, "--------------------------------------------------\r\n");
-                    HAL_UART_Transmit(&huart2, (uint8_t*)tx_buffer, len, HAL_MAX_DELAY);
-
-                    // 다음 측정을 위해 카운터를 0으로 초기화
-                    measurement_count = 0;
-                }
+			// 다음 측정을 위해 카운터를 0으로 초기화
+			measurement_count = 0;
+		}
+	vTaskDelayUntil(&xLastWakeTime, xFrequency);
    }
 }
 
@@ -457,11 +470,12 @@ void vUSBReadTask(void *pvParameters)
 // LCD Task
 void vLCDTask(void *pvParameters)
 {
-    // --- 측정 부분 ---
-    TickType_t execution_times[100];
-    for (int i = 0; i < 100; i++)
+	#define NUM_MEASUREMENTS 100
+	static int measurement_count = 0;
+	float execution_times[100];
+    for (;;)
     {
-        TickType_t start_time = xTaskGetTickCount();
+    	uint32_t start_time = DWT->CYCCNT;
 
         lcd_clear();
         lcd_put_cursor(0, 0);
@@ -469,78 +483,58 @@ void vLCDTask(void *pvParameters)
         lcd_put_cursor(1, 0);
         lcd_send_string("Machine conditio");
 
-        TickType_t end_time = xTaskGetTickCount();
-        execution_times[i] = end_time - start_time;
+        if (measurement_count < NUM_MEASUREMENTS){
+			uint32_t end_time = DWT->CYCCNT;
+			uint32_t cycles = end_time - start_time;
+			execution_times[measurement_count] = (float)cycles * 1000.0f / (float)CPU_CLOCK_HZ;
+			measurement_count++;
+        }
+        if (measurement_count >= NUM_MEASUREMENTS){
+        	float  min_time_ticks = FLT_MAX;
+			float  max_time_ticks = 0.0f;
+			float  sum_time_ticks = 0.0f;
+			double std_dev_ticks = 0.0;
+			double variance_ticks = 0.0;
 
+			for (int i = 0; i < 100; i++)
+			{
+				float current_time = execution_times[i];
+				sum_time_ticks += current_time;
+				if (current_time < min_time_ticks) min_time_ticks = current_time;
+				if (current_time > max_time_ticks) max_time_ticks = current_time;
+			}
+
+			double avg_time_ticks = (double)sum_time_ticks / 100;
+
+			double sum_of_squared_diffs = 0.0;
+			for (int i = 0; i < 100; i++) {
+				double diff = (double)execution_times[i] - avg_time_ticks;
+				sum_of_squared_diffs += diff * diff;
+			}
+			variance_ticks = sum_of_squared_diffs / 100.0;
+			std_dev_ticks = sqrt(variance_ticks);
+
+			char tx_buffer[100];
+			int len = 0;
+
+			len = sprintf(tx_buffer, "------ LCD (Unit: ms) ------\r\n");
+			HAL_UART_Transmit(&huart2, (uint8_t*)tx_buffer, len, HAL_MAX_DELAY);
+
+			len = sprintf(tx_buffer, "Average:       %.3f ms\r\n", avg_time_ticks);
+			HAL_UART_Transmit(&huart2, (uint8_t*)tx_buffer, len, HAL_MAX_DELAY);
+
+			len = sprintf(tx_buffer, "Std Deviation: %.3f ms\r\n", std_dev_ticks);
+			HAL_UART_Transmit(&huart2, (uint8_t*)tx_buffer, len, HAL_MAX_DELAY);
+
+			len = sprintf(tx_buffer, "Minimum:       %.3f ms\r\n", min_time_ticks);
+			HAL_UART_Transmit(&huart2, (uint8_t*)tx_buffer, len, HAL_MAX_DELAY);
+
+			len = sprintf(tx_buffer, "Maximum:       %.3f ms\r\n", max_time_ticks);
+			HAL_UART_Transmit(&huart2, (uint8_t*)tx_buffer, len, HAL_MAX_DELAY);
+
+        	measurement_count = 0;
+        }
         vTaskDelay(pdMS_TO_TICKS(50));
-    }
-
-    // --- 통계 계산 부분 ---
-
-    // 1. 변수들을 계산 루프 바깥에 선언합니다.
-    TickType_t min_time_ticks = (TickType_t)UINT_MAX;
-    TickType_t max_time_ticks = 0;
-    uint64_t sum_time_ticks = 0;
-    double variance_ticks = 0.0; // variance 변수를 여기서 선언!
-    double std_dev_ticks = 0.0;
-
-    // 2. 첫 번째 루프: 합계, 최소, 최대값만 계산합니다.
-    for (int i = 0; i < 100; i++)
-    {
-        TickType_t current_time = execution_times[i];
-        sum_time_ticks += current_time;
-        if (current_time < min_time_ticks) min_time_ticks = current_time;
-        if (current_time > max_time_ticks) max_time_ticks = current_time;
-    }
-
-    // 3. 평균을 계산합니다. (루프가 끝난 후!)
-    double avg_time_ticks = (double)sum_time_ticks / 100;
-
-    // 4. 두 번째 루프: 분산을 계산합니다. (평균이 계산된 후!)
-    double sum_of_squared_diffs = 0.0;
-    for (int i = 0; i < 100; i++) {
-        double diff = (double)execution_times[i] - avg_time_ticks;
-        sum_of_squared_diffs += diff * diff;
-    }
-    variance_ticks = sum_of_squared_diffs / 100;
-    std_dev_ticks = sqrt(variance_ticks); // 표준편차도 계산
-
-    // 5. ms 단위로 변환합니다.
-    float conversion_factor = 1000.0f / configTICK_RATE_HZ;
-    float avg_time_ms = (float)avg_time_ticks * conversion_factor;
-    float min_time_ms = (float)min_time_ticks * conversion_factor;
-    float max_time_ms = (float)max_time_ticks * conversion_factor;
-    float variance_ms = (float)variance_ticks * (conversion_factor * conversion_factor); // 분산은 시간 단위의 제곱이므로 변환 계수를 두 번 곱해야 함
-    float std_dev_ms = (float)std_dev_ticks * conversion_factor;
-
-    // 6. 최종 결과를 출력합니다.
-    char tx_buffer[100];
-    int len = 0;
-
-    // 2. sprintf로 문자열을 만들고 HAL_UART_Transmit으로 전송 (반복)
-    len = sprintf(tx_buffer, "------ Execution Time Stats (Unit: ms) ------\r\n");
-    HAL_UART_Transmit(&huart2, (uint8_t*)tx_buffer, len, HAL_MAX_DELAY);
-
-    len = sprintf(tx_buffer, "Average:       %.3f ms\r\n", avg_time_ms);
-    HAL_UART_Transmit(&huart2, (uint8_t*)tx_buffer, len, HAL_MAX_DELAY);
-
-    len = sprintf(tx_buffer, "Std Deviation: %.3f ms\r\n", std_dev_ms);
-    HAL_UART_Transmit(&huart2, (uint8_t*)tx_buffer, len, HAL_MAX_DELAY);
-
-    len = sprintf(tx_buffer, "Minimum:       %.3f ms\r\n", min_time_ms);
-    HAL_UART_Transmit(&huart2, (uint8_t*)tx_buffer, len, HAL_MAX_DELAY);
-
-    len = sprintf(tx_buffer, "Maximum:       %.3f ms\r\n", max_time_ms);
-    HAL_UART_Transmit(&huart2, (uint8_t*)tx_buffer, len, HAL_MAX_DELAY);
-
-    len = sprintf(tx_buffer, "-------------------------------------------------\r\n");
-    HAL_UART_Transmit(&huart2, (uint8_t*)tx_buffer, len, HAL_MAX_DELAY);
-
-
-    // 7. 작업 완료 후 태스크를 무한정 대기 상태로 전환
-    for (;;)
-    {
-        vTaskDelay(portMAX_DELAY);
     }
 }
 
@@ -548,9 +542,8 @@ void vLCDTask(void *pvParameters)
 void modelTask(void *pvParameters){
 
 	#define NUM_MEASUREMENTS 100
-	static TickType_t execution_times[NUM_MEASUREMENTS];
+	float execution_times[NUM_MEASUREMENTS];
 	static int measurement_count = 0;
-	static TickType_t start_time = 0;
 
     ai_handle frfconv = AI_HANDLE_NULL;
     ai_error err;
@@ -573,39 +566,29 @@ void modelTask(void *pvParameters){
 			in_data[i] = (float)rand() / (float)RAND_MAX;
 		}
 
-		start_time = xTaskGetTickCount();
+		uint32_t start_time = DWT->CYCCNT;
 
 		ai_i32 n_batch;
 
 		ai_input = &report.inputs[0];
 		ai_output = &report.outputs[0];
 
-//          ai_input = ai_frfconv_inputs_get(frfconv, NULL);
-//          ai_output = ai_frfconv_outputs_get(frfconv, NULL);
-
 		ai_input[0].data = AI_HANDLE_PTR(in_data);
 		ai_output[0].data = AI_HANDLE_PTR(out_data);
 
 		n_batch = ai_frfconv_run(frfconv, &ai_input[0], &ai_output[0]);
-		TickType_t end_time = xTaskGetTickCount();
+		uint32_t end_time = DWT->CYCCNT;
+		uint32_t cycles = end_time - start_time;
 		if (n_batch != 1) {
 		   ai_error err = ai_frfconv_get_error(frfconv);
-		   int len = snprintf(buf, sizeof(buf), "ai run error %d, %d\r\n", err.type, err.code);
-//		   HAL_UART_Transmit(&huart2, (uint8_t*)buf, len, HAL_MAX_DELAY);
-			}
-
-		int len = snprintf(buf, sizeof(buf), "\r\nInference output: ");
-//		HAL_UART_Transmit(&huart2, (uint8_t*)buf, len, HAL_MAX_DELAY);
+			};
 
 		for (int i = 0; i < AI_FRFCONV_OUT_1_SIZE; i++) {
 			float y_val = (float)out_data[i];
-			len = snprintf(buf, sizeof(buf), "%.2f,", y_val);
-//			HAL_UART_Transmit(&huart2, (uint8_t*)buf, len, HAL_MAX_DELAY);
 		}
-//		 vPrintString("\r\n");
 
 		if (measurement_count < NUM_MEASUREMENTS) {
-			execution_times[measurement_count] = end_time - start_time;
+			execution_times[measurement_count] = (float)cycles * 1000.0f / (float)CPU_CLOCK_HZ;
 			measurement_count++;
 		}
 		if (measurement_count >= NUM_MEASUREMENTS) {
@@ -613,12 +596,12 @@ void modelTask(void *pvParameters){
 			int len = 0;
 
 			// 통계 계산
-			TickType_t min_time_ticks = (TickType_t)UINT_MAX;
-			TickType_t max_time_ticks = 0;
-			uint64_t sum_time_ticks = 0;
+			float min_time_ticks = FLT_MAX;
+			float max_time_ticks = 0.0f;
+			float sum_time_ticks = 0.0f;
 
 			for (int i = 0; i < NUM_MEASUREMENTS; i++) {
-				TickType_t current_time = execution_times[i];
+				float current_time = execution_times[i];
 				sum_time_ticks += current_time;
 				if (current_time < min_time_ticks) min_time_ticks = current_time;
 				if (current_time > max_time_ticks) max_time_ticks = current_time;
@@ -633,33 +616,22 @@ void modelTask(void *pvParameters){
 			double variance_ticks = sum_of_squared_diffs / NUM_MEASUREMENTS;
 			double std_dev_ticks = sqrt(variance_ticks);
 
-			// ms 단위 변환
-			float conversion_factor = 1000.0f / configTICK_RATE_HZ;
-			float avg_time_ms = (float)avg_time_ticks * conversion_factor;
-			float min_time_ms = (float)min_time_ticks * conversion_factor;
-			float max_time_ms = (float)max_time_ticks * conversion_factor;
-			float std_dev_ms = (float)std_dev_ticks * conversion_factor;
-			float variance_ms = (float)variance_ticks * (conversion_factor * conversion_factor);
-
 			// UART 출력
 			len = sprintf(tx_buffer, "\r\n------ Model Time Stats ------\r\n");
 			HAL_UART_Transmit(&huart2, (uint8_t*)tx_buffer, len, HAL_MAX_DELAY);
-			len = sprintf(tx_buffer, "Average: %.3f ms\r\n", avg_time_ms);
+			len = sprintf(tx_buffer, "Average: %.3f ms\r\n", avg_time_ticks);
 			HAL_UART_Transmit(&huart2, (uint8_t*)tx_buffer, len, HAL_MAX_DELAY);
-			len = sprintf(tx_buffer, "Std Deviation: %.3f ms\r\n", std_dev_ms);
+			len = sprintf(tx_buffer, "Std Deviation: %.3f ms\r\n", std_dev_ticks);
 			HAL_UART_Transmit(&huart2, (uint8_t*)tx_buffer, len, HAL_MAX_DELAY);
-			len = sprintf(tx_buffer, "Minimum: %.3f ms\r\n", min_time_ms);
+			len = sprintf(tx_buffer, "Minimum: %.3f ms\r\n", min_time_ticks);
 			HAL_UART_Transmit(&huart2, (uint8_t*)tx_buffer, len, HAL_MAX_DELAY);
-			len = sprintf(tx_buffer, "Maximum: %.3f ms\r\n", max_time_ms);
-			HAL_UART_Transmit(&huart2, (uint8_t*)tx_buffer, len, HAL_MAX_DELAY);
-			len = sprintf(tx_buffer, "Variance: %.3f ms^2\r\n", variance_ms);
-			HAL_UART_Transmit(&huart2, (uint8_t*)tx_buffer, len, HAL_MAX_DELAY);
-			len = sprintf(tx_buffer, "--------------------------------------------------\r\n");
+			len = sprintf(tx_buffer, "Maximum: %.3f ms\r\n", max_time_ticks);
 			HAL_UART_Transmit(&huart2, (uint8_t*)tx_buffer, len, HAL_MAX_DELAY);
 
 			// 다음 측정을 위해 카운터를 0으로 초기화
 			measurement_count = 0;
 		}
+		vTaskDelay(pdMS_TO_TICKS(10));
     }
 }
 
