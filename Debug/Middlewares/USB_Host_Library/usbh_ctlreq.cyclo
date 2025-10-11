@@ -1,0 +1,17 @@
+C:/Users/ChoiSeongHyeon/STM32Cube/Repository/STM32Cube_FW_F4_V1.28.2/Middlewares/ST/STM32_USB_Host_Library/Core/Src/usbh_ctlreq.c:96:20:USBH_Get_DevDesc	4
+C:/Users/ChoiSeongHyeon/STM32Cube/Repository/STM32Cube_FW_F4_V1.28.2/Middlewares/ST/STM32_USB_Host_Library/Core/Src/usbh_ctlreq.c:145:20:USBH_Get_CfgDesc	3
+C:/Users/ChoiSeongHyeon/STM32Cube/Repository/STM32Cube_FW_F4_V1.28.2/Middlewares/ST/STM32_USB_Host_Library/Core/Src/usbh_ctlreq.c:189:20:USBH_Get_StringDesc	4
+C:/Users/ChoiSeongHyeon/STM32Cube/Repository/STM32Cube_FW_F4_V1.28.2/Middlewares/ST/STM32_USB_Host_Library/Core/Src/usbh_ctlreq.c:225:20:USBH_GetDescriptor	3
+C:/Users/ChoiSeongHyeon/STM32Cube/Repository/STM32Cube_FW_F4_V1.28.2/Middlewares/ST/STM32_USB_Host_Library/Core/Src/usbh_ctlreq.c:274:20:USBH_SetAddress	2
+C:/Users/ChoiSeongHyeon/STM32Cube/Repository/STM32Cube_FW_F4_V1.28.2/Middlewares/ST/STM32_USB_Host_Library/Core/Src/usbh_ctlreq.c:300:20:USBH_SetCfg	2
+C:/Users/ChoiSeongHyeon/STM32Cube/Repository/STM32Cube_FW_F4_V1.28.2/Middlewares/ST/STM32_USB_Host_Library/Core/Src/usbh_ctlreq.c:325:20:USBH_SetInterface	2
+C:/Users/ChoiSeongHyeon/STM32Cube/Repository/STM32Cube_FW_F4_V1.28.2/Middlewares/ST/STM32_USB_Host_Library/Core/Src/usbh_ctlreq.c:364:20:USBH_SetFeature	2
+C:/Users/ChoiSeongHyeon/STM32Cube/Repository/STM32Cube_FW_F4_V1.28.2/Middlewares/ST/STM32_USB_Host_Library/Core/Src/usbh_ctlreq.c:389:20:USBH_ClrFeature	2
+C:/Users/ChoiSeongHyeon/STM32Cube/Repository/STM32Cube_FW_F4_V1.28.2/Middlewares/ST/STM32_USB_Host_Library/Core/Src/usbh_ctlreq.c:415:27:USBH_ParseDevDesc	11
+C:/Users/ChoiSeongHyeon/STM32Cube/Repository/STM32Cube_FW_F4_V1.28.2/Middlewares/ST/STM32_USB_Host_Library/Core/Src/usbh_ctlreq.c:489:27:USBH_ParseCfgDesc	20
+C:/Users/ChoiSeongHyeon/STM32Cube/Repository/STM32Cube_FW_F4_V1.28.2/Middlewares/ST/STM32_USB_Host_Library/Core/Src/usbh_ctlreq.c:650:13:USBH_ParseInterfaceDesc	1
+C:/Users/ChoiSeongHyeon/STM32Cube/Repository/STM32Cube_FW_F4_V1.28.2/Middlewares/ST/STM32_USB_Host_Library/Core/Src/usbh_ctlreq.c:682:27:USBH_ParseEPDesc	31
+C:/Users/ChoiSeongHyeon/STM32Cube/Repository/STM32Cube_FW_F4_V1.28.2/Middlewares/ST/STM32_USB_Host_Library/Core/Src/usbh_ctlreq.c:770:13:USBH_ParseStringDesc	3
+C:/Users/ChoiSeongHyeon/STM32Cube/Repository/STM32Cube_FW_F4_V1.28.2/Middlewares/ST/STM32_USB_Host_Library/Core/Src/usbh_ctlreq.c:810:20:USBH_GetNextDesc	1
+C:/Users/ChoiSeongHyeon/STM32Cube/Repository/STM32Cube_FW_F4_V1.28.2/Middlewares/ST/STM32_USB_Host_Library/Core/Src/usbh_ctlreq.c:832:20:USBH_CtlReq	6
+C:/Users/ChoiSeongHyeon/STM32Cube/Repository/STM32Cube_FW_F4_V1.28.2/Middlewares/ST/STM32_USB_Host_Library/Core/Src/usbh_ctlreq.c:895:27:USBH_HandleControl	32
