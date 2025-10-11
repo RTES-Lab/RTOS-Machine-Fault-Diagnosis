@@ -20,6 +20,7 @@
 
 #include "frfconv_config.h"
 #include "ai_platform.h"
+//#include "ai_platform_interface.h"
 
 /******************************************************************************/
 #define AI_FRFCONV_MODEL_NAME          "frfconv"

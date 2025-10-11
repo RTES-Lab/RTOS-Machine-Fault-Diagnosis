@@ -43,6 +43,7 @@
 #include <string.h>
 #include <stdio.h>
 #include <float.h>
+#include <math.h>
 
 #include "FreeRTOS.h"
 #include "task.h"
@@ -130,6 +131,11 @@ void modelTask(void *pvParameters);
 void vLCDTask(void *pvParameters);
 void vUSBhostTask(void *pvParameters);
 
+static bool USB_ReadBlock(float *MAI, int N);
+static bool Model_Init(void);
+static bool Model_RunOnce(const float *in2048, int *top_cls, float *top_prob);
+static void LCD_ShowResult(int cls, float prob);
+
 /* USER CODE END PFP */
 
 /* Private user code ---------------------------------------------------------*/
@@ -174,7 +180,6 @@ int main(void)
   const char *boot = "[BOOT] UART ready\r\n";
   HAL_UART_Transmit(&huart2, (uint8_t*)boot, strlen(boot), 100);
 
-  MX_I2C1_Init();
 
 
   xDataReadySemaphore = xSemaphoreCreateBinary();
@@ -193,21 +198,41 @@ int main(void)
   MX_USB_HOST_Init();
   lcd_init();
 
-  vTaskStartScheduler();
 
+  /* [ADD] 모델 초기화 */
+  if (!Model_Init()) {
+      vPrintString("[AI] init failed\r\n");
+      Error_Handler();
+  }
   /* USER CODE END 2 */
 
   /* Infinite loop */
   /* USER CODE BEGIN WHILE */
   while (1)
-  {
+    {
+        // 1) USB에서 2048 샘플 수집 (블로킹)
+        if (!USB_ReadBlock(sample_buffer, SAMPLES_TO_SAVE)) {
+            vPrintString("[USB] read block failed\r\n");
+            continue;
+        }
 
-    /* USER CODE END WHILE */
-    MX_USB_HOST_Process();
+        // (선택) 디버깅: 처음 3개 값
+        char dbg[96];
+        snprintf(dbg, sizeof(dbg), "Start: %.4f, %.4f, %.4f\r\n",
+                 sample_buffer[0], sample_buffer[1], sample_buffer[2]);
+        vPrintString(dbg);
 
-    /* USER CODE BEGIN 3 */
-  }
+        // 2) 모델 추론
+        int top_cls = -1;
+        float top_prob = 0.0f;
+        if (!Model_RunOnce(sample_buffer, &top_cls, &top_prob)) {
+            vPrintString("[AI] run failed\r\n");
+            HAL_Delay(1);
+            continue;
+        }
 
+        LCD_ShowResult(top_cls, top_prob);
+    }
 }
   /* USER CODE END 3 */
 
@@ -239,40 +264,6 @@ static void MX_CRC_Init(void)
 
 }
 
-
-
-/**
-  * @brief USART2 Initialization Function
-  * @param None
-  * @retval None
-  */
-static void MX_USART2_UART_Init(void)
-{
-
-  /* USER CODE BEGIN USART2_Init 0 */
-
-  /* USER CODE END USART2_Init 0 */
-
-  /* USER CODE BEGIN USART2_Init 1 */
-
-  /* USER CODE END USART2_Init 1 */
-  huart2.Instance = USART2;
-  huart2.Init.BaudRate = 115200;
-  huart2.Init.WordLength = UART_WORDLENGTH_8B;
-  huart2.Init.StopBits = UART_STOPBITS_1;
-  huart2.Init.Parity = UART_PARITY_NONE;
-  huart2.Init.Mode = UART_MODE_TX_RX;
-  huart2.Init.HwFlowCtl = UART_HWCONTROL_NONE;
-  huart2.Init.OverSampling = UART_OVERSAMPLING_16;
-  if (HAL_UART_Init(&huart2) != HAL_OK)
-  {
-    Error_Handler();
-  }
-  /* USER CODE BEGIN USART2_Init 2 */
-
-  /* USER CODE END USART2_Init 2 */
-
-}
 
 /**
   * @brief GPIO Initialization Function
@@ -322,6 +313,183 @@ static void MX_GPIO_Init(void)
   * @brief System Clock Configuration
   * @retval None
   */
+
+/* ====== [ADD] 라벨/유틸 ====== */
+static const char* kLabels8[8] = { "H","L","U1","U2","U3","M1","M2","M3" };
+
+static int argmaxf(const ai_float *x, int n) {
+    int mi = 0; ai_float mv = x[0];
+    for (int i = 1; i < n; ++i) if (x[i] > mv) { mv = x[i]; mi = i; }
+    return mi;
+}
+static float softmax_top1_prob(const ai_float *x, int n, int topi) {
+    float m = x[0]; for (int i = 1; i < n; ++i) if (x[i] > m) m = x[i];
+    double sum = 0.0; for (int i = 0; i < n; ++i) sum += exp((double)(x[i] - m));
+    return (float)(exp((double)(x[topi] - m)) / sum);
+}
+
+/* ====== [ADD] (선택) DWT 초기화 ====== */
+static void DWT_Init(void) {
+    CoreDebug->DEMCR |= CoreDebug_DEMCR_TRCENA_Msk;
+    DWT->CYCCNT = 0;
+    DWT->CTRL |= 1;
+}
+
+/* ====== [ADD] USB에서 2048 샘플 수집(블로킹) ====== */
+static bool USB_ReadBlock(float *MAI, int N)
+{
+    AUDIO_HandleTypeDef *audio_handle;
+    static uint8_t isoc_submitted = 0;
+    int collected = 0;
+
+    while (collected < N)
+    {
+        MX_USB_HOST_Process();
+
+        if (hUsbHostFS.pActiveClass == NULL) {
+            HAL_Delay(1);
+            continue;
+        }
+        audio_handle = (AUDIO_HandleTypeDef *)hUsbHostFS.pActiveClass->pData;
+        if (!(audio_handle && audio_handle->microphone.supported)) {
+            HAL_Delay(1);
+            continue;
+        }
+
+        uint8_t *ubuf = audio_handle->microphone.buf;
+
+        if (!isoc_submitted) {
+            if (USBH_IsocReceiveData(&hUsbHostFS,
+                   ubuf, audio_handle->microphone.frame_length,
+                   audio_handle->microphone.Pipe) == USBH_OK) {
+                isoc_submitted = 1;
+            }
+            HAL_Delay(1);
+            continue;
+        }
+
+        USBH_URBStateTypeDef urb =
+            USBH_LL_GetURBState(&hUsbHostFS, audio_handle->microphone.Pipe);
+
+        if (urb == USBH_URB_DONE) {
+            int frames_in_buf = audio_handle->microphone.frame_length / FRAME_SIZE;
+
+            for (int i = 0; i < frames_in_buf; i += DOWNSAMPLE_FACTOR) {
+                if (collected >= N) break;
+                int32_t sv = convert24bitToInt32(&ubuf[i * FRAME_SIZE]);   // L 채널
+                float scaled = (float)sv * SCALE_FACTOR;
+                MAI[collected++] = scaled;
+            }
+
+            (void)USBH_IsocReceiveData(&hUsbHostFS,
+                ubuf, audio_handle->microphone.frame_length,
+                audio_handle->microphone.Pipe);
+        } else {
+            // 필요시 HAL_Delay(0~1)
+        }
+    }
+    return true;
+}
+
+/* ====== [ADD] 모델 컨텍스트/초기화/1회 추론 ====== */
+typedef struct {
+    ai_handle         net;
+    ai_network_report report;
+    bool              ready;
+} model_ctx_t;
+
+static model_ctx_t g_model = {0};
+
+static bool Model_Init(void)
+{
+    if (g_model.ready) return true;
+
+    const ai_handle acts[] = { activations };
+    ai_error err = ai_frfconv_create_and_init(&g_model.net, acts, NULL);
+    if (err.type != AI_ERROR_NONE) {
+        vPrintString("[AI] create/init fail\r\n");
+        return false;
+    }
+    if (!ai_frfconv_get_report(g_model.net, &g_model.report)) {
+        vPrintString("[AI] get_report fail\r\n");
+        return false;
+    }
+    /* (권장) 출력 차원=8 확인 */
+    if (g_model.report.n_outputs < 1 || g_model.report.outputs[0].size != 8) {
+        vPrintString("[AI] ERROR: out size != 8\r\n");
+        return false;
+    }
+    g_model.ready = true;
+    return true;
+}
+
+/* in2048을 그대로 in_data에 복사(필요 시 전처리 삽입 지점) */
+static bool Model_RunOnce(const float *in2048, int *top_cls, float *top_prob)
+{
+    /* 0) 모델 준비 안됐으면 자동 초기화 */
+    if (!g_model.ready) {
+        if (!Model_Init()) {
+            vPrintString("[AI] init fail\r\n");
+            return false;
+        }
+    }
+
+    /* 1) 입력 복사 (필요시 전처리 자리에 추가) */
+    const int inN = (int)AI_FRFCONV_IN_1_SIZE;
+    if (inN != 2048) {
+        const int copyN = (inN < 2048) ? inN : 2048;
+        for (int i = 0; i < copyN; ++i)  in_data[i] = in2048[i];
+        for (int i = copyN; i < inN; ++i) in_data[i] = 0.0f;  /* zero-pad */
+    } else {
+        for (int i = 0; i < 2048; ++i)   in_data[i] = in2048[i];
+    }
+
+    /* 2) 버퍼 바인딩 */
+    ai_buffer *ai_in  = &g_model.report.inputs[0];
+    ai_buffer *ai_out = &g_model.report.outputs[0];
+    ai_in[0].data  = AI_HANDLE_PTR(in_data);
+    ai_out[0].data = AI_HANDLE_PTR(out_data);
+
+    /* 3) 추론 실행 */
+    ai_i32 nb = ai_frfconv_run(g_model.net, &ai_in[0], &ai_out[0]);
+    if (nb != 1) {
+        ai_error e = ai_frfconv_get_error(g_model.net);
+        char msg[96];
+        /* 실패 원인 로깅: type/code는 ST 런타임 에러 코드 */
+        snprintf(msg, sizeof(msg), "[AI] run err type=%d code=%d\r\n", (int)e.type, (int)e.code);
+        vPrintString(msg);
+        return false;
+    }
+
+    /* 4) Top-1 클래스/확률 계산 */
+    const int outN = (int)AI_FRFCONV_OUT_1_SIZE;     /* 생성된 매크로 사용이 가장 안전 */
+    int cls = argmaxf(out_data, outN);
+    float p = softmax_top1_prob(out_data, outN, cls);
+
+    if (top_cls)  *top_cls  = cls;
+    if (top_prob) *top_prob = p;
+    return true;
+}
+
+
+/* ====== [ADD] LCD 표시 ====== */
+static void LCD_ShowResult(int cls, float prob)
+{
+    const char *label = (cls >=0 && cls < 8) ? kLabels8[cls] : "UNK";
+    const char *flag  = (cls == 0) ? "OK " : "ALRT";  // H만 OK, 나머지 경고
+    char line2[17];
+    float pct = prob * 100.0f;
+    snprintf(line2, sizeof(line2), "%-4sConf:%5.1f%%", flag, pct);
+
+    lcd_clear();
+    lcd_put_cursor(0, 0);
+    lcd_send_string(label);   // 1행: H/L/U1/U2/U3/M1/M2/M3
+    lcd_put_cursor(1, 0);
+    lcd_send_string(line2);   // 2행: OK/ALRT + 확률
+}
+
+
+
 void SystemClock_Config(void)
 {
   RCC_OscInitTypeDef RCC_OscInitStruct = {0};
@@ -414,127 +582,127 @@ void DumpHexUART(uint8_t *buf, uint16_t len)
 //}
 
 
-/**
-  * @brief  USB 가속도계로부터 데이터를 읽고 출력하는 태스크. 주기 10ms
-  */
-void vUSBReadTask(void *pvParameters)
-{
-//    xLastWakeTime = xTaskGetTickCount();
-    AUDIO_HandleTypeDef *audio_handle;
-    uint8_t *buf;
-
-    int collected_samples = 0;
-    static uint8_t isoc_submitted = 0;
-
-//	#define NUM_MEASUREMENTS 100
-//    float execution_times[NUM_MEASUREMENTS];
-//	static int measurement_count = 0;
-//	static uint32_t start_time = 0;
-
-    for (;;) {
-        MX_USB_HOST_Process();
-        audio_handle = (AUDIO_HandleTypeDef *)hUsbHostFS.pActiveClass->pData;
-
-        if (!(audio_handle && audio_handle->microphone.supported)) {
-        	vTaskDelay(pdMS_TO_TICKS(1));
-        	continue;
-        }
-
-        buf = audio_handle->microphone.buf;
-
-        if (!isoc_submitted) {
-            if (USBH_IsocReceiveData(&hUsbHostFS,
-                           buf,
-                           audio_handle->microphone.frame_length,
-                           audio_handle->microphone.Pipe) == USBH_OK) {
-               isoc_submitted = 1;
-            }
-            vTaskDelay(pdMS_TO_TICKS(1));
-            continue;
-        }
-
-        USBH_URBStateTypeDef urb =
-                    USBH_LL_GetURBState(&hUsbHostFS, audio_handle->microphone.Pipe);
-
-        if (urb == USBH_URB_DONE) {
-            int frames_in_buf = audio_handle->microphone.frame_length / FRAME_SIZE;
-
-            for (int i = 0; i < frames_in_buf; i += DOWNSAMPLE_FACTOR){
-               if (collected_samples < SAMPLES_TO_SAVE) {
-//                   if (collected_samples == 0) {
-//                	   start_time = DWT->CYCCNT;
-//                   }
-                    int32_t sample_val = convert24bitToInt32(&buf[i * FRAME_SIZE]);
-                    float scaled_val = (float)sample_val * SCALE_FACTOR;
-                    sample_buffer[collected_samples++] = scaled_val;
-               }
-               // 2048개 샘플이 모두 모였을 때
-               if (collected_samples >= SAMPLES_TO_SAVE){
-//                   char buf[128];
-//                   // 처음 3개
-//                   snprintf(buf, sizeof(buf), "  Start: %.4f, %.4f, %.4f\r\n", sample_buffer[0], sample_buffer[1], sample_buffer[2]);
-//                   vPrintString(buf);
-//                   if (measurement_count < NUM_MEASUREMENTS) {
-//                	   uint32_t end_time = DWT->CYCCNT;
-//                	   uint32_t cycles = end_time - start_time;
-//						execution_times[measurement_count] = (float)cycles * 1000.0f / (float)CPU_CLOCK_HZ;
-//						measurement_count++;
-//                   }
-                  collected_samples = 0;
-                  break;
-               }
-            }
-            // 다음 데이터 패킷을 받기 위해 수신 요청을 다시 제출
-            (void)USBH_IsocReceiveData(&hUsbHostFS,
-                                       buf,
-                                       audio_handle->microphone.frame_length,
-                                       audio_handle->microphone.Pipe);
-        	}
-        else{
+//**
+//  * @brief  USB 가속도계로부터 데이터를 읽고 출력하는 태스크. 주기 10ms
+//  */
+//void vUSBReadTask(void *pvParameters)
+//{
+////    xLastWakeTime = xTaskGetTickCount();
+//    AUDIO_HandleTypeDef *audio_handle;
+//    uint8_t *buf;
+//
+//    int collected_samples = 0;
+//    static uint8_t isoc_submitted = 0;
+//
+////	#define NUM_MEASUREMENTS 100
+////    float execution_times[NUM_MEASUREMENTS];
+////	static int measurement_count = 0;
+////	static uint32_t start_time = 0;
+//
+//    for (;;) {
+//        MX_USB_HOST_Process();
+//        audio_handle = (AUDIO_HandleTypeDef *)hUsbHostFS.pActiveClass->pData;
+//
+//        if (!(audio_handle && audio_handle->microphone.supported)) {
 //        	vTaskDelay(pdMS_TO_TICKS(1));
-        }
-//		if (measurement_count >= NUM_MEASUREMENTS) {
-//			char tx_buffer[128];
-//			int len = 0;
+//        	continue;
+//        }
 //
-//			// 통계 계산
-//			float min_time_ticks = FLT_MAX;
-//			float max_time_ticks = 0.0f;
-//			float sum_time_ticks = 0.0f;
+//        buf = audio_handle->microphone.buf;
 //
-//			for (int i = 0; i < NUM_MEASUREMENTS; i++) {
-//				float current_time = execution_times[i];
-//				sum_time_ticks += current_time;
-//				if (current_time < min_time_ticks) min_time_ticks = current_time;
-//				if (current_time > max_time_ticks) max_time_ticks = current_time;
-//			}
+//        if (!isoc_submitted) {
+//            if (USBH_IsocReceiveData(&hUsbHostFS,
+//                           buf,
+//                           audio_handle->microphone.frame_length,
+//                           audio_handle->microphone.Pipe) == USBH_OK) {
+//               isoc_submitted = 1;
+//            }
+//            vTaskDelay(pdMS_TO_TICKS(1));
+//            continue;
+//        }
 //
-//			double avg_time_ticks = (double)sum_time_ticks / NUM_MEASUREMENTS;
-//			double sum_of_squared_diffs = 0.0;
-//			for (int i = 0; i < NUM_MEASUREMENTS; i++) {
-//				double diff = (double)execution_times[i] - avg_time_ticks;
-//					sum_of_squared_diffs += diff * diff;
-//			}
-//			double variance_ticks = sum_of_squared_diffs / NUM_MEASUREMENTS;
-//			double std_dev_ticks = sqrt(variance_ticks);
+//        USBH_URBStateTypeDef urb =
+//                    USBH_LL_GetURBState(&hUsbHostFS, audio_handle->microphone.Pipe);
 //
-//			// UART 출력
-//			len = sprintf(tx_buffer, "\r\n------ USB sensing Time Stats ------\r\n");
-//			HAL_UART_Transmit(&huart2, (uint8_t*)tx_buffer, len, HAL_MAX_DELAY);
-//			len = sprintf(tx_buffer, "Average: %.3f ms\r\n", avg_time_ticks);
-//			HAL_UART_Transmit(&huart2, (uint8_t*)tx_buffer, len, HAL_MAX_DELAY);
-//			len = sprintf(tx_buffer, "Std Deviation: %.3f ms\r\n", std_dev_ticks);
-//			HAL_UART_Transmit(&huart2, (uint8_t*)tx_buffer, len, HAL_MAX_DELAY);
-//			len = sprintf(tx_buffer, "Minimum: %.3f ms\r\n", min_time_ticks);
-//			HAL_UART_Transmit(&huart2, (uint8_t*)tx_buffer, len, HAL_MAX_DELAY);
-//			len = sprintf(tx_buffer, "Maximum: %.3f ms\r\n", max_time_ticks);
-//			HAL_UART_Transmit(&huart2, (uint8_t*)tx_buffer, len, HAL_MAX_DELAY);
+//        if (urb == USBH_URB_DONE) {
+//            int frames_in_buf = audio_handle->microphone.frame_length / FRAME_SIZE;
 //
-//			// 다음 측정을 위해 카운터를 0으로 초기화
-//			measurement_count = 0;
-		}
-	vTaskDelayUntil(&xLastWakeTime, xFrequency);
-}
+//            for (int i = 0; i < frames_in_buf; i += DOWNSAMPLE_FACTOR){
+//               if (collected_samples < SAMPLES_TO_SAVE) {
+////                   if (collected_samples == 0) {
+////                	   start_time = DWT->CYCCNT;
+////                   }
+//                    int32_t sample_val = convert24bitToInt32(&buf[i * FRAME_SIZE]);
+//                    float scaled_val = (float)sample_val * SCALE_FACTOR;
+//                    sample_buffer[collected_samples++] = scaled_val;
+//               }
+//               // 2048개 샘플이 모두 모였을 때
+//               if (collected_samples >= SAMPLES_TO_SAVE){
+////                   char buf[128];
+////                   // 처음 3개
+////                   snprintf(buf, sizeof(buf), "  Start: %.4f, %.4f, %.4f\r\n", sample_buffer[0], sample_buffer[1], sample_buffer[2]);
+////                   vPrintString(buf);
+////                   if (measurement_count < NUM_MEASUREMENTS) {
+////                	   uint32_t end_time = DWT->CYCCNT;
+////                	   uint32_t cycles = end_time - start_time;
+////						execution_times[measurement_count] = (float)cycles * 1000.0f / (float)CPU_CLOCK_HZ;
+////						measurement_count++;
+////                   }
+//                  collected_samples = 0;
+//                  break;
+//               }
+//            }
+//            // 다음 데이터 패킷을 받기 위해 수신 요청을 다시 제출
+//            (void)USBH_IsocReceiveData(&hUsbHostFS,
+//                                       buf,
+//                                       audio_handle->microphone.frame_length,
+//                                       audio_handle->microphone.Pipe);
+//        	}
+//        else{
+////        	vTaskDelay(pdMS_TO_TICKS(1));
+//        }
+////		if (measurement_count >= NUM_MEASUREMENTS) {
+////			char tx_buffer[128];
+////			int len = 0;
+////
+////			// 통계 계산
+////			float min_time_ticks = FLT_MAX;
+////			float max_time_ticks = 0.0f;
+////			float sum_time_ticks = 0.0f;
+////
+////			for (int i = 0; i < NUM_MEASUREMENTS; i++) {
+////				float current_time = execution_times[i];
+////				sum_time_ticks += current_time;
+////				if (current_time < min_time_ticks) min_time_ticks = current_time;
+////				if (current_time > max_time_ticks) max_time_ticks = current_time;
+////			}
+////
+////			double avg_time_ticks = (double)sum_time_ticks / NUM_MEASUREMENTS;
+////			double sum_of_squared_diffs = 0.0;
+////			for (int i = 0; i < NUM_MEASUREMENTS; i++) {
+////				double diff = (double)execution_times[i] - avg_time_ticks;
+////					sum_of_squared_diffs += diff * diff;
+////			}
+////			double variance_ticks = sum_of_squared_diffs / NUM_MEASUREMENTS;
+////			double std_dev_ticks = sqrt(variance_ticks);
+////
+////			// UART 출력
+////			len = sprintf(tx_buffer, "\r\n------ USB sensing Time Stats ------\r\n");
+////			HAL_UART_Transmit(&huart2, (uint8_t*)tx_buffer, len, HAL_MAX_DELAY);
+////			len = sprintf(tx_buffer, "Average: %.3f ms\r\n", avg_time_ticks);
+////			HAL_UART_Transmit(&huart2, (uint8_t*)tx_buffer, len, HAL_MAX_DELAY);
+////			len = sprintf(tx_buffer, "Std Deviation: %.3f ms\r\n", std_dev_ticks);
+////			HAL_UART_Transmit(&huart2, (uint8_t*)tx_buffer, len, HAL_MAX_DELAY);
+////			len = sprintf(tx_buffer, "Minimum: %.3f ms\r\n", min_time_ticks);
+////			HAL_UART_Transmit(&huart2, (uint8_t*)tx_buffer, len, HAL_MAX_DELAY);
+////			len = sprintf(tx_buffer, "Maximum: %.3f ms\r\n", max_time_ticks);
+////			HAL_UART_Transmit(&huart2, (uint8_t*)tx_buffer, len, HAL_MAX_DELAY);
+////
+////			// 다음 측정을 위해 카운터를 0으로 초기화
+////			measurement_count = 0;
+//		}
+//	vTaskDelayUntil(&xLastWakeTime, xFrequency);
+//}
 
 
 //// LCD Task
@@ -624,51 +792,51 @@ void vLCDTask(void *pvParameters)
 //}
 
 // Model task
-void modelTask(void *pvParameters){
-
-    ai_handle frfconv = AI_HANDLE_NULL;
-    ai_error err;
-    ai_network_report report;
-
-    const ai_handle acts[] = { activations };
-    err = ai_frfconv_create_and_init(&frfconv, acts, NULL);
-    if (err.type != AI_ERROR_NONE) {
-       vPrintString("ai init_and_create error\n");
-    }
-
-    if (ai_frfconv_get_report(frfconv, &report) != true) {
-       vPrintString("ai get report error\n");
-    }
-
-    srand(1);
-    for (;;){
-		char buf[128];
-		for (int i = 0; i < AI_FRFCONV_IN_1_SIZE; i++) {
-			in_data[i] = (float)rand() / (float)RAND_MAX;
-		}
-
-
-		ai_i32 n_batch;
-
-		ai_input = &report.inputs[0];
-		ai_output = &report.outputs[0];
-
-		ai_input[0].data = AI_HANDLE_PTR(in_data);
-		ai_output[0].data = AI_HANDLE_PTR(out_data);
-
-		n_batch = ai_frfconv_run(frfconv, &ai_input[0], &ai_output[0]);
-		uint32_t end_time = DWT->CYCCNT;
-		uint32_t cycles = end_time - start_time;
-		if (n_batch != 1) {
-		   ai_error err = ai_frfconv_get_error(frfconv);
-			};
-
-		for (int i = 0; i < AI_FRFCONV_OUT_1_SIZE; i++) {
-			float y_val = (float)out_data[i];
-		}
-//		vTaskDelay(pdMS_TO_TICKS(10));
-    }
-}
+//void modelTask(void *pvParameters){
+//
+//    ai_handle frfconv = AI_HANDLE_NULL;
+//    ai_error err;
+//    ai_network_report report;
+//
+//    const ai_handle acts[] = { activations };
+//    err = ai_frfconv_create_and_init(&frfconv, acts, NULL);
+//    if (err.type != AI_ERROR_NONE) {
+//       vPrintString("ai init_and_create error\n");
+//    }
+//
+//    if (ai_frfconv_get_report(frfconv, &report) != true) {
+//       vPrintString("ai get report error\n");
+//    }
+//
+//    srand(1);
+//    for (;;){
+//		char buf[128];
+//		for (int i = 0; i < AI_FRFCONV_IN_1_SIZE; i++) {
+//			in_data[i] = (float)rand() / (float)RAND_MAX;
+//		}
+//
+//
+//		ai_i32 n_batch;
+//
+//		ai_input = &report.inputs[0];
+//		ai_output = &report.outputs[0];
+//
+//		ai_input[0].data = AI_HANDLE_PTR(in_data);
+//		ai_output[0].data = AI_HANDLE_PTR(out_data);
+//
+//		n_batch = ai_frfconv_run(frfconv, &ai_input[0], &ai_output[0]);
+//		uint32_t end_time = DWT->CYCCNT;
+//		uint32_t cycles = end_time - start_time;
+//		if (n_batch != 1) {
+//		   ai_error err = ai_frfconv_get_error(frfconv);
+//			};
+//
+//		for (int i = 0; i < AI_FRFCONV_OUT_1_SIZE; i++) {
+//			float y_val = (float)out_data[i];
+//		}
+////		vTaskDelay(pdMS_TO_TICKS(10));
+//    }
+//}
 
 void vApplicationGetIdleTaskMemory( StaticTask_t **ppxIdleTaskTCBBuffer,
                                    StackType_t **ppxIdleTaskStackBuffer,
