@@ -46,3 +46,7 @@
 "./USB_HOST/App/usb_host.o"
 "./USB_HOST/Target/usbh_conf.o"
 "./USB_HOST/Target/usbh_platform.o"
+"./X-CUBE-AI/App/app_x-cube-ai.o"
+"./X-CUBE-AI/App/frfconv.o"
+"./X-CUBE-AI/App/frfconv_data.o"
+"./X-CUBE-AI/App/frfconv_data_params.o"
