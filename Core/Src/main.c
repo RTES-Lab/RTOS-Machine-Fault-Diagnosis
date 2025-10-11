@@ -131,10 +131,15 @@ void modelTask(void *pvParameters);
 void vLCDTask(void *pvParameters);
 void vUSBhostTask(void *pvParameters);
 
+static void USB_Recover(void);
+static const char* HostStateStr(ApplicationTypeDef s);
+static bool USB_WaitReady(uint32_t wait_ms);
+
 static bool USB_ReadBlock(float *MAI, int N);
 static bool Model_Init(void);
 static bool Model_RunOnce(const float *in2048, int *top_cls, float *top_prob);
 static void LCD_ShowResult(int cls, float prob);
+
 
 /* USER CODE END PFP */
 
@@ -335,36 +340,93 @@ static void DWT_Init(void) {
     DWT->CTRL |= 1;
 }
 
-/* ====== [ADD] USB에서 2048 샘플 수집(블로킹) ====== */
-static bool USB_ReadBlock(float *MAI, int N)
+static const char* HostStateStr(ApplicationTypeDef s){
+    switch(s){
+      case APPLICATION_IDLE: return "IDLE";
+      case APPLICATION_START: return "START";
+      case APPLICATION_READY: return "READY";
+      case APPLICATION_DISCONNECT: return "DISCONN";
+      default: return "?";
+    }
+}
+
+
+
+// 상단에 선언
+static void USB_Recover(void) {
+    vPrintString("[USB] recover: re-init host\r\n");
+    USBH_Stop(&hUsbHostFS);
+    USBH_DeInit(&hUsbHostFS);
+    MX_USB_HOST_Init();
+}
+
+static bool USB_WaitReady(uint32_t wait_ms)
 {
-    AUDIO_HandleTypeDef *audio_handle;
+    uint32_t t0 = HAL_GetTick();
+    ApplicationTypeDef last = Appli_state;
+
+    while ((HAL_GetTick() - t0) < wait_ms) {
+        MX_USB_HOST_Process();
+        if (Appli_state != last) {
+            char msg[48];
+            snprintf(msg, sizeof(msg), "[USB] host=%s\r\n", HostStateStr(Appli_state));
+            vPrintString(msg);
+            last = Appli_state;
+        }
+        if (Appli_state == APPLICATION_READY)
+            return true;
+        HAL_Delay(2); // 여유 있게
+    }
+    return false;
+}
+
+static bool USB_ReadBlock(float *dst, int N)
+{
     static uint8_t isoc_submitted = 0;
+
+    /* READY 대기 (최대 5초) */
+    if (Appli_state != APPLICATION_READY) {
+        if (!USB_WaitReady(20000)) { // << 기다리는 시간 크게
+            vPrintString("[USB] not READY (timeout)\r\n");
+            return false;
+        }
+        isoc_submitted = 0;
+    }
+
+    AUDIO_HandleTypeDef *audio_handle =
+        (AUDIO_HandleTypeDef *)((hUsbHostFS.pActiveClass) ? hUsbHostFS.pActiveClass->pData : NULL);
+    if (!(audio_handle && audio_handle->microphone.supported)) {
+        vPrintString("[USB] audio class not ready\r\n");
+        return false;
+    }
+
+    const uint32_t FRAME_TIMEOUT_MS = 2000;   // 프레임 대기 타임아웃(늘림)
+    uint32_t last_frame_tick = HAL_GetTick();
     int collected = 0;
 
-    while (collected < N)
-    {
+    while (collected < N) {
         MX_USB_HOST_Process();
 
-        if (hUsbHostFS.pActiveClass == NULL) {
-            HAL_Delay(1);
-            continue;
-        }
-        audio_handle = (AUDIO_HandleTypeDef *)hUsbHostFS.pActiveClass->pData;
-        if (!(audio_handle && audio_handle->microphone.supported)) {
-            HAL_Delay(1);
-            continue;
+        /* 연결 끊김 감지 */
+        if (Appli_state == APPLICATION_DISCONNECT || hUsbHostFS.pActiveClass == NULL) {
+            vPrintString("[USB] disconnected during read\r\n");
+            return false;
         }
 
         uint8_t *ubuf = audio_handle->microphone.buf;
 
+        /* 최초 submit */
         if (!isoc_submitted) {
-            if (USBH_IsocReceiveData(&hUsbHostFS,
-                   ubuf, audio_handle->microphone.frame_length,
-                   audio_handle->microphone.Pipe) == USBH_OK) {
+            if (USBH_IsocReceiveData(&hUsbHostFS, ubuf,
+                    audio_handle->microphone.frame_length,
+                    audio_handle->microphone.Pipe) == USBH_OK) {
                 isoc_submitted = 1;
+                last_frame_tick = HAL_GetTick();
             }
-            HAL_Delay(1);
+            /* 프레임 없어도 READY면 더 기다려 준다 */
+            if ((HAL_GetTick() - last_frame_tick) > FRAME_TIMEOUT_MS)
+                return false;
+            HAL_Delay(2);
             continue;
         }
 
@@ -373,23 +435,32 @@ static bool USB_ReadBlock(float *MAI, int N)
 
         if (urb == USBH_URB_DONE) {
             int frames_in_buf = audio_handle->microphone.frame_length / FRAME_SIZE;
-
             for (int i = 0; i < frames_in_buf; i += DOWNSAMPLE_FACTOR) {
                 if (collected >= N) break;
-                int32_t sv = convert24bitToInt32(&ubuf[i * FRAME_SIZE]);   // L 채널
+                int32_t sv = convert24bitToInt32(&ubuf[i * FRAME_SIZE]);
                 float scaled = (float)sv * SCALE_FACTOR;
-                MAI[collected++] = scaled;
+                dst[collected++] = scaled;
             }
+            (void)USBH_IsocReceiveData(&hUsbHostFS, ubuf,
+                    audio_handle->microphone.frame_length,
+                    audio_handle->microphone.Pipe);
+            last_frame_tick = HAL_GetTick(); // 프레임 받았으니 타임아웃 리셋
+        }
+        else if (urb == USBH_URB_ERROR || urb == USBH_URB_STALL || urb == USBH_URB_NOTREADY) {
+            (void)USBH_IsocReceiveData(&hUsbHostFS, ubuf,
+                    audio_handle->microphone.frame_length,
+                    audio_handle->microphone.Pipe);
+        }
 
-            (void)USBH_IsocReceiveData(&hUsbHostFS,
-                ubuf, audio_handle->microphone.frame_length,
-                audio_handle->microphone.Pipe);
-        } else {
-            // 필요시 HAL_Delay(0~1)
+        /* READY인데 프레임이 너무 오래 안 오면 상위로 false */
+        if ((HAL_GetTick() - last_frame_tick) > FRAME_TIMEOUT_MS) {
+            vPrintString("[USB] frame timeout\r\n");
+            return false;
         }
     }
     return true;
 }
+
 
 /* ====== [ADD] 모델 컨텍스트/초기화/1회 추론 ====== */
 typedef struct {
