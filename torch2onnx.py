@@ -13,14 +13,14 @@ config = funs.load_yaml('./config.yaml')
 funs.set_seed(config.seed)
 
 # name setting
-torch_model_name = 'FRFconv-TDS_overlapX'
-onnx_model_name = 'FRFconv-TDS_onnx'
+torch_model_name = 'ST_FRFconv-TDS_50_1013_v3'
+onnx_model_name = 'ST_FRFconv-TDS_50_1013_v3'
 
 # 모델 정의
-FRFconv_TDS = model.Mynet2(n_classes=8)
+FRFconv_TDS = model.Mynet2(n_classes=4)
 
 # 모델 가중치 로드
-model_path = f'{config.model_root}/{torch_model_name}.pt'
+model_path = f'{config.model_root_st}/{torch_model_name}.pt'
 FRFconv_TDS.load_state_dict(torch.load(model_path, weights_only=True))
 
 # 모델을 추론 모드로 전환

@@ -74,6 +74,35 @@ def STmake_dataframe(config, data_dirs):
 
     return data_frame
 
+def STmake_dataframe_8c(config, data_dirs):
+
+    df = {}
+    df["data"] = []
+    df["fault_type"] = []
+    df["label"] = []
+    df["RPM"] = []
+    df["bearing_type"] = []
+    for dir_path in os.listdir(data_dirs):
+        for fname in os.listdir(os.path.join(data_dirs, dir_path)):
+            filepath = os.path.join(data_dirs, dir_path, fname)
+
+            fault_type = filepath.split('/')[-2]
+            bearing_type = 'DeepGrooveBall'
+
+            with open(filepath, 'r') as f:
+                data = f.readlines()
+            body = np.array(data, np.float64)
+
+            df['data'].append(body)
+            df['fault_type'].append(fault_type)
+            df['label'].append(config.label_8c[fault_type])
+            df['RPM'].append(1400)
+            df['bearing_type'].append(bearing_type)
+
+    data_frame = pd.DataFrame(df)
+
+    return data_frame
+
 
 def split_dataframe(
     df: pd.DataFrame, train_ratio: float, val_ratio: float

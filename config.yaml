@@ -20,7 +20,7 @@ rpm:
   - 1600
       
 # data labels
-label:
+label_8c:
   H: 0
   L: 1
   M1: 2
@@ -29,6 +29,11 @@ label:
   U1: 5
   U2: 6
   U3: 7
+label:
+  H: 0
+  L: 1
+  M: 2
+  U: 3
 
 # input data length and overlap (no overlap if samplre_size == overlap)
 sample_size: 2048

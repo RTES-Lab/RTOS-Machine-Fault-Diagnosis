@@ -20,16 +20,16 @@ def main(config, args):
     aEp = args.epochs
 
     # name setting
-    model_name = f'ST_FRFconv-TDS_{aEp}_1013_v3'
-    log_file = f'ST_log_per_acc_{aEp}_1013_v3.txt'
-    cm_name = f'ST_confusion_matrix_{aEp}_1013_v3.png'
+    model_name = f'ST_FRFconv-TDS_{aEp}_1013_v2'
+    log_file = f'ST_log_per_acc_{aEp}_1013_v2.txt'
+    cm_name = f'ST_confusion_matrix_{aEp}_1013_v2.png'
 
     # Data preparation
-    data_root_dirs = os.path.join('1013_Class_4')
+    data_root_dirs = os.path.join('1013_Class')
 
     print("Making dataframes...")
 
-    df =funs.STmake_dataframe(config, data_root_dirs)
+    df =funs.STmake_dataframe_8c(config, data_root_dirs)
 
     # Split the dataframe into train, validation, and test sets
     train_df, temp_df = train_test_split(
@@ -90,7 +90,7 @@ def main(config, args):
     funs.log_class_acc(config.log_root_st, fault_label_list, predicted_label_list, f'{log_file}')
 
     # confusion matrix plot
-    funs.plot_confusion_matrix(config.pic_root_st ,fault_label_list, predicted_label_list, cm_name)
+    funs.plot_confusion_matrix_8c(config.pic_root_st ,fault_label_list, predicted_label_list, cm_name)
 
 if __name__=='__main__':
     config = funs.load_yaml('./config.yaml')
