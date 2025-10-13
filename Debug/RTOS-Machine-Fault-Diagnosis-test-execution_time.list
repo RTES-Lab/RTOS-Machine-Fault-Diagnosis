@@ -4001,7 +4001,7 @@ static void MX_GPIO_Init(void)
   */
 
 /* ====== [ADD] 라벨/유틸 ====== */
-static const char* kLabels8[8] = { "H","L","U1","U2","U3","M1","M2","M3" };
+static const char* kLabels8[8] = { "H","L","M1","M2","M3","U1","U2","U3" };
 
 static int argmaxf(const ai_float *x, int n) {
  8001ee8:	b480      	push	{r7}
