@@ -2,7 +2,7 @@
   ******************************************************************************
   * @file    frfconv_data.c
   * @author  AST Embedded Analytics Research Platform
-  * @date    2025-10-09T14:29:35+0900
+  * @date    2025-10-14T15:22:11+0900
   * @brief   AI Tool Automatic Code Generator for Embedded NN computing
   ******************************************************************************
   * @attention
@@ -26,8 +26,8 @@ ai_buffer g_frfconv_data_map_activations[AI_FRFCONV_DATA_ACTIVATIONS_COUNT] = {
   };
 ai_buffer g_frfconv_data_map_weights[AI_FRFCONV_DATA_WEIGHTS_COUNT] = {
   AI_BUFFER_INIT(AI_FLAG_NONE,  AI_BUFFER_FORMAT_U8,
-    AI_BUFFER_SHAPE_INIT(AI_SHAPE_BCWH, 4, 1, 35056, 1, 1),
-    35056, NULL, s_frfconv_weights_array_u64),   /* weights_array */
+    AI_BUFFER_SHAPE_INIT(AI_SHAPE_BCWH, 4, 1, 35328, 1, 1),
+    35328, NULL, s_frfconv_weights_array_u64),   /* weights_array */
   };
 
 

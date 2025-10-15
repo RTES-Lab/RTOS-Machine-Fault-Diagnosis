@@ -16,7 +16,7 @@ S_DEPS += \
 
 # Each subdirectory must supply rules for building sources it contributes
 Core/Startup/%.o: ../Core/Startup/%.s Core/Startup/subdir.mk
-	arm-none-eabi-gcc -mcpu=cortex-m4 -g3 -DDEBUG -c -I"C:/Users/ChoiSeongHyeon/Desktop/SR_CODE_Copy/RTOS-Machine-Fault-Diagnosis-test-execution_time/RTOS-Machine-Fault-Diagnosis-test-execution_time/Core/Inc/FreeRTOS/port" -I"C:/Users/ChoiSeongHyeon/Desktop/SR_CODE_Copy/RTOS-Machine-Fault-Diagnosis-test-execution_time/RTOS-Machine-Fault-Diagnosis-test-execution_time/Core/Inc/FreeRTOS" -x assembler-with-cpp -MMD -MP -MF"$(@:%.o=%.d)" -MT"$@" --specs=nano.specs -mfpu=fpv4-sp-d16 -mfloat-abi=hard -mthumb -o "$@" "$<"
+	arm-none-eabi-gcc -mcpu=cortex-m4 -g3 -DDEBUG -c -I"C:/Github/RTOS-Machine-Fault-Diagnosis/Core/Inc/FreeRTOS/port" -I"C:/Github/RTOS-Machine-Fault-Diagnosis/Core/Inc/FreeRTOS" -x assembler-with-cpp -MMD -MP -MF"$(@:%.o=%.d)" -MT"$@" --specs=nano.specs -mfpu=fpv4-sp-d16 -mfloat-abi=hard -mthumb -o "$@" "$<"
 
 clean: clean-Core-2f-Startup
 

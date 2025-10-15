@@ -1,33 +1,33 @@
 ST Edge AI Core v2.2.0-20266 2adc00962
-Created date          : 2025-10-09 14:29:36
-Parameters            : generate --target stm32f4 --name frfconv -m C:/Users/user/Downloads/ST_FRFconv-TDS_1000.onnx --compression high --verbosity 1 --workspace C:/Users/user/AppData/Local/Temp/mxAI_workspace6182040432853007706781049855475920 --output C:/Users/user/.stm32cubemx/frfconv_output
+Created date          : 2025-10-14 15:22:13
+Parameters            : generate --target stm32f4 --name frfconv -m C:/Users/user/Downloads/ST_FRFconv-TDS_1000_1013_v2.onnx --compression none --verbosity 1 --workspace C:/Users/user/AppData/Local/Temp/mxAI_workspace105336487446450016578309870527397335 --output C:/Users/user/.stm32cubemx/frfconv_output
 
 Exec/report summary (generate)
------------------------------------------------------------------------------------------------------------
-model file         :   C:\Users\user\Downloads\ST_FRFconv-TDS_1000.onnx                                    
-type               :   onnx                                                                                
-c_name             :   frfconv                                                                             
-compression        :   high                                                                                
-options            :   allocate-inputs, allocate-outputs                                                   
-optimization       :   balanced                                                                            
-target/series      :   stm32f4                                                                             
-workspace dir      :   C:\Users\user\AppData\Local\Temp\mxAI_workspace6182040432853007706781049855475920   
-output dir         :   C:\Users\user\.stm32cubemx\frfconv_output                                           
-model_fmt          :   float                                                                               
-model_name         :   ST_FRFconvTDS_1000                                                                  
-model_hash         :   0x26475cc1b24c812121e420354d70db54                                                  
-params #           :   8,830 items (34.49 KiB)                                                             
------------------------------------------------------------------------------------------------------------
-input 1/1          :   'input', f32(1x2048x1), 8.00 KBytes, activations                                    
-output 1/1         :   'output', f32(1x8), 32 Bytes, activations                                           
-macc               :   1,905,462                                                                           
-weights (ro)       :   35,056 B (34.23 KiB) (1 segment) / -264(-0.7%) vs float model                       
-activations (rw)   :   32,776 B (32.01 KiB) (1 segment) *                                                  
-ram (total)        :   32,776 B (32.01 KiB) = 32,776 + 0 + 0                                               
------------------------------------------------------------------------------------------------------------
+-------------------------------------------------------------------------------------------------------------
+model file         :   C:\Users\user\Downloads\ST_FRFconv-TDS_1000_1013_v2.onnx                              
+type               :   onnx                                                                                  
+c_name             :   frfconv                                                                               
+compression        :   none                                                                                  
+options            :   allocate-inputs, allocate-outputs                                                     
+optimization       :   balanced                                                                              
+target/series      :   stm32f4                                                                               
+workspace dir      :   C:\Users\user\AppData\Local\Temp\mxAI_workspace105336487446450016578309870527397335   
+output dir         :   C:\Users\user\.stm32cubemx\frfconv_output                                             
+model_fmt          :   float                                                                                 
+model_name         :   ST_FRFconvTDS_1000_1013_v2                                                            
+model_hash         :   0x06bca75565eb77fefbbcd7f976ae5d13                                                    
+params #           :   8,830 items (34.49 KiB)                                                               
+-------------------------------------------------------------------------------------------------------------
+input 1/1          :   'input', f32(1x2048x1), 8.00 KBytes, activations                                      
+output 1/1         :   'output', f32(1x8), 32 Bytes, activations                                             
+macc               :   1,905,462                                                                             
+weights (ro)       :   35,328 B (34.50 KiB) (1 segment) / +8(+0.0%) vs float model                           
+activations (rw)   :   32,776 B (32.01 KiB) (1 segment) *                                                    
+ram (total)        :   32,776 B (32.01 KiB) = 32,776 + 0 + 0                                                 
+-------------------------------------------------------------------------------------------------------------
 (*) 'input'/'output' buffers are allocated in the activations buffer
 
-Model name - ST_FRFconvTDS_1000
+Model name - ST_FRFconvTDS_1000_1013_v2
 ------ ---------------------------------------------------------- ------------------ ------------- --------- -------------------------------- --- -------------- -------------------- ---------------------------- 
 m_id   layer (type,original)                                      oshape             param/size         macc                     connected to   | c_size         c_macc               c_type                       
 ------ ---------------------------------------------------------- ------------------ ------------- --------- -------------------------------- --- -------------- -------------------- ---------------------------- 
@@ -39,7 +39,7 @@ m_id   layer (type,original)                                      oshape        
 ------ ---------------------------------------------------------- ------------------ ------------- --------- -------------------------------- --- -------------- -------------------- ---------------------------- 
 3      _Constant_5_output_0 (Placeholder, Pow)                    []                 1/4                                                        | -4(-100.0%)    +10,240(+100.0%)     Eltwise/div_[32]             
 ------ ---------------------------------------------------------- ------------------ ------------- --------- -------------------------------- --- -------------- -------------------- ---------------------------- 
-87     linear_0_weight (Placeholder, Gemm)                        [b:8,c:12]         96/384                                                     | -240(-62.5%)   +104(+100.0%)        Dense_[o][73]                
+87     linear_0_weight (Placeholder, Gemm)                        [b:8,c:12]         96/384                                                     | +32(+8.3%)     +104(+100.0%)        Dense_[o][73]                
        linear_0_bias (Placeholder, Gemm)                          [b:8]              8/32                                                       | -32(-100.0%)                        
 ------ ---------------------------------------------------------- ------------------ ------------- --------- -------------------------------- --- -------------- -------------------- ---------------------------- 
 0      input (Input, )                                            [b:1,h:2048,c:1]                                                              |                                     
@@ -219,153 +219,153 @@ m_id   layer (type,original)                                      oshape        
                                                                                                                               linear_0_weight   | 
                                                                                                                                 linear_0_bias   | 
 ------ ---------------------------------------------------------- ------------------ ------------- --------- -------------------------------- --- -------------- -------------------- ---------------------------- 
-model/c-model: macc=1,917,739/1,905,462 -12,277(-0.6%) weights=35,320/35,056 -264(-0.7%) activations=--/32,776 io=--/0
+model/c-model: macc=1,917,739/1,905,462 -12,277(-0.6%) weights=35,320/35,328 +8(+0.0%) activations=--/32,776 io=--/0
 
 
 
 Generated C-graph summary
 ------------------------------------------------------------------------------------------------------------------------
-model name            : ST_FRFconvTDS_1000
+model name            : ST_FRFconvTDS_1000_1013_v2
 c-name                : frfconv
 c-node #              : 74
 c-array #             : 126
 activations size      : 32776 (1 segment)
-weights size          : 35056 (1 segment)
+weights size          : 35328 (1 segment)
 macc                  : 1905462
 inputs                : ['input_output']
 outputs               : ['output_output']
 
 C-Arrays (126)
------- --------------------------------------------------------- ----------- ------------------------- ------------------ --------- 
-c_id   name (*_array)                                            item/size   domain/mem-pool           c-type             comment   
------- --------------------------------------------------------- ----------- ------------------------- ------------------ --------- 
-0      _Abs_output_0_output                                      2048/8192   activations/**default**   float                        
-1      _Concat_1_output_0_output                                 12/48       activations/**default**   float                        
-2      _Concat_output_0_output                                   7/28        activations/**default**   float                        
-3      _Constant_2_output_0_3D                                   1/4         weights/weights           const float                  
-4      _Constant_3_output_0_3D                                   1/4         weights/weights           const float                  
-5      _Constant_4_output_0_3D                                   1/4         weights/weights           const float                  
-6      _Constant_5_output_0_3D                                   1/4         weights/weights           const float                  
-7      _Div_1_output_0_output                                    1/4         activations/**default**   float                        
-8      _Div_2_output_0_output                                    1/4         activations/**default**   float                        
-9      _Div_output_0_output                                      2048/8192   activations/**default**   float                        
-10     _Mul_2_output_0_output                                    2048/8192   activations/**default**   float                        
-11     _Mul_3_output_0_output                                    1/4         activations/**default**   float                        
-12     _Mul_4_output_0_output                                    1/4         activations/**default**   float                        
-13     _Mul_output_0_output                                      2048/8192   activations/**default**   float                        
-14     _Pow_1_output_0_output                                    2048/8192   activations/**default**   float                        
-15     _Pow_2_output_0_output                                    1/4         activations/**default**   float                        
-16     _Pow_3_output_0_output                                    2048/8192   activations/**default**   float                        
-17     _Pow_output_0_output                                      1/4         activations/**default**   float                        
-18     _Reciprocal_1_output_0_output                             1/4         activations/**default**   float                        
-19     _Reciprocal_output_0_output                               1/4         activations/**default**   float                        
-20     _ReduceMax_output_0_output                                1/4         activations/**default**   float                        
-21     _ReduceMean_1_output_0_Mul_output                         1/4         activations/**default**   float                        
-22     _ReduceMean_1_output_0_output                             1/4         activations/**default**   float                        
-23     _ReduceMean_2_output_0_Mul_output                         1/4         activations/**default**   float                        
-24     _ReduceMean_2_output_0_Mul_scale                          1/4         weights/weights           const float                  
-25     _ReduceMean_2_output_0_output                             1/4         activations/**default**   float                        
-26     _ReduceMean_3_output_0_Mul_bias                           1/4         weights/weights           const float                  
-27     _ReduceMean_3_output_0_Mul_output                         1/4         activations/**default**   float                        
-28     _ReduceMean_3_output_0_Mul_scale                          1/4         weights/weights           const float                  
-29     _ReduceMean_3_output_0_output                             1/4         activations/**default**   float                        
-30     _ReduceMean_4_output_0_Mul_output                         1/4         activations/**default**   float                        
-31     _ReduceMean_4_output_0_output                             1/4         activations/**default**   float                        
-32     _ReduceMean_5_output_0_Mul_output                         1/4         activations/**default**   float                        
-33     _ReduceMean_5_output_0_output                             1/4         activations/**default**   float                        
-34     _ReduceMean_output_0_Mul_output                           1/4         activations/**default**   float                        
-35     _ReduceMean_output_0_output                               1/4         activations/**default**   float                        
-36     _Slice_output_0_output                                    4/16        activations/**default**   float                        
-37     _Sqrt_1_output_0_output                                   1/4         activations/**default**   float                        
-38     _Sqrt_output_0_output                                     1/4         activations/**default**   float                        
-39     _Sub_1_output_0_const_3D                                  1/4         weights/weights           const float                  
-40     _Sub_2_output_0_output                                    2048/8192   activations/**default**   float                        
-41     _Sub_output_0_output                                      2048/8192   activations/**default**   float                        
-42     _convnet_conv1_conv_conv_0_Conv_output_0_bias             8/32        weights/weights           const float                  
-43     _convnet_conv1_conv_conv_0_Conv_output_0_output           2048/8192   activations/**default**   float                        
-44     _convnet_conv1_conv_conv_0_Conv_output_0_scratch0         64/256      activations/**default**   float                        
-45     _convnet_conv1_conv_conv_0_Conv_output_0_weights          512/2048    weights/weights           const float                  
-46     _convnet_conv1_conv_conv_2_Relu_output_0_output           2048/8192   activations/**default**   float                        
-47     _convnet_conv2_1_Add_output_0_output                      2048/8192   activations/**default**   float                        
-48     _convnet_conv2_1_act_Relu_output_0_output                 2048/8192   activations/**default**   float                        
-49     _convnet_conv2_1_dwconv_dwconv_0_Conv_output_0_bias       8/32        weights/weights           const float                  
-50     _convnet_conv2_1_dwconv_dwconv_0_Conv_output_0_output     2048/8192   activations/**default**   float                        
-51     _convnet_conv2_1_dwconv_dwconv_0_Conv_output_0_weights    2040/8160   weights/weights           const float                  
-52     _convnet_conv2_1_dwconv_dwconv_2_Relu_output_0_output     2048/8192   activations/**default**   float                        
-53     _convnet_conv2_1_pwconv_pwconv_0_Conv_output_0_bias       8/32        weights/weights           const float                  
-54     _convnet_conv2_1_pwconv_pwconv_0_Conv_output_0_output     2048/8192   activations/**default**   float                        
-55     _convnet_conv2_1_pwconv_pwconv_0_Conv_output_0_scratch0   8/32        activations/**default**   float                        
-56     _convnet_conv2_1_pwconv_pwconv_0_Conv_output_0_weights    64/256      weights/weights           const float                  
-57     _convnet_conv2_2_Add_output_0_output                      2048/8192   activations/**default**   float                        
-58     _convnet_conv2_2_act_Relu_output_0_output                 2048/8192   activations/**default**   float                        
-59     _convnet_conv2_2_dwconv_dwconv_0_Conv_output_0_bias       8/32        weights/weights           const float                  
-60     _convnet_conv2_2_dwconv_dwconv_0_Conv_output_0_output     2048/8192   activations/**default**   float                        
-61     _convnet_conv2_2_dwconv_dwconv_0_Conv_output_0_weights    2040/8160   weights/weights           const float                  
-62     _convnet_conv2_2_dwconv_dwconv_2_Relu_output_0_output     2048/8192   activations/**default**   float                        
-63     _convnet_conv2_2_pwconv_pwconv_0_Conv_output_0_bias       8/32        weights/weights           const float                  
-64     _convnet_conv2_2_pwconv_pwconv_0_Conv_output_0_output     2048/8192   activations/**default**   float                        
-65     _convnet_conv2_2_pwconv_pwconv_0_Conv_output_0_scratch0   8/32        activations/**default**   float                        
-66     _convnet_conv2_2_pwconv_pwconv_0_Conv_output_0_weights    64/256      weights/weights           const float                  
-67     _convnet_conv2_3_Add_output_0_output                      2048/8192   activations/**default**   float                        
-68     _convnet_conv2_3_act_Relu_output_0_output                 2048/8192   activations/**default**   float                        
-69     _convnet_conv2_3_dwconv_dwconv_0_Conv_output_0_bias       8/32        weights/weights           const float                  
-70     _convnet_conv2_3_dwconv_dwconv_0_Conv_output_0_output     2048/8192   activations/**default**   float                        
-71     _convnet_conv2_3_dwconv_dwconv_0_Conv_output_0_weights    2040/8160   weights/weights           const float                  
-72     _convnet_conv2_3_dwconv_dwconv_2_Relu_output_0_output     2048/8192   activations/**default**   float                        
-73     _convnet_conv2_3_pwconv_pwconv_0_Conv_output_0_bias       8/32        weights/weights           const float                  
-74     _convnet_conv2_3_pwconv_pwconv_0_Conv_output_0_output     2048/8192   activations/**default**   float                        
-75     _convnet_conv2_3_pwconv_pwconv_0_Conv_output_0_scratch0   8/32        activations/**default**   float                        
-76     _convnet_conv2_3_pwconv_pwconv_0_Conv_output_0_weights    64/256      weights/weights           const float                  
-77     _convnet_conv2_conv_conv_0_Conv_output_0_bias             8/32        weights/weights           const float                  
-78     _convnet_conv2_conv_conv_0_Conv_output_0_output           256/1024    activations/**default**   float                        
-79     _convnet_conv2_conv_conv_0_Conv_output_0_weights          192/768     weights/weights           const float                  
-80     _convnet_conv2_conv_conv_2_Relu_output_0_output           256/1024    activations/**default**   float                        
-81     _convnet_conv2_conv_conv_3_Conv_output_0_bias             8/32        weights/weights           const float                  
-82     _convnet_conv2_conv_conv_3_Conv_output_0_output           256/1024    activations/**default**   float                        
-83     _convnet_conv2_conv_conv_3_Conv_output_0_scratch0         8/32        activations/**default**   float                        
-84     _convnet_conv2_conv_conv_3_Conv_output_0_weights          64/256      weights/weights           const float                  
-85     _convnet_conv2_conv_conv_5_Relu_output_0_output           256/1024    activations/**default**   float                        
-86     _convnet_conv3_0_Add_output_0_output                      256/1024    activations/**default**   float                        
-87     _convnet_conv3_0_act_Relu_output_0_output                 256/1024    activations/**default**   float                        
-88     _convnet_conv3_0_dwconv_dwconv_0_Conv_output_0_bias       8/32        weights/weights           const float                  
-89     _convnet_conv3_0_dwconv_dwconv_0_Conv_output_0_output     256/1024    activations/**default**   float                        
-90     _convnet_conv3_0_dwconv_dwconv_0_Conv_output_0_weights    248/992     weights/weights           const float                  
-91     _convnet_conv3_0_dwconv_dwconv_2_Relu_output_0_output     256/1024    activations/**default**   float                        
-92     _convnet_conv3_0_pwconv_pwconv_0_Conv_output_0_bias       8/32        weights/weights           const float                  
-93     _convnet_conv3_0_pwconv_pwconv_0_Conv_output_0_output     256/1024    activations/**default**   float                        
-94     _convnet_conv3_0_pwconv_pwconv_0_Conv_output_0_scratch0   8/32        activations/**default**   float                        
-95     _convnet_conv3_0_pwconv_pwconv_0_Conv_output_0_weights    64/256      weights/weights           const float                  
-96     _convnet_conv3_1_Add_output_0_output                      256/1024    activations/**default**   float                        
-97     _convnet_conv3_1_act_Relu_output_0_output                 256/1024    activations/**default**   float                        
-98     _convnet_conv3_1_dwconv_dwconv_0_Conv_output_0_bias       8/32        weights/weights           const float                  
-99     _convnet_conv3_1_dwconv_dwconv_0_Conv_output_0_output     256/1024    activations/**default**   float                        
-100    _convnet_conv3_1_dwconv_dwconv_0_Conv_output_0_weights    248/992     weights/weights           const float                  
-101    _convnet_conv3_1_dwconv_dwconv_2_Relu_output_0_output     256/1024    activations/**default**   float                        
-102    _convnet_conv3_1_pwconv_pwconv_0_Conv_output_0_bias       8/32        weights/weights           const float                  
-103    _convnet_conv3_1_pwconv_pwconv_0_Conv_output_0_output     256/1024    activations/**default**   float                        
-104    _convnet_conv3_1_pwconv_pwconv_0_Conv_output_0_scratch0   8/32        activations/**default**   float                        
-105    _convnet_conv3_1_pwconv_pwconv_0_Conv_output_0_weights    64/256      weights/weights           const float                  
-106    _convnet_conv3_2_Add_output_0_output                      256/1024    activations/**default**   float                        
-107    _convnet_conv3_2_act_Relu_output_0_output                 256/1024    activations/**default**   float                        
-108    _convnet_conv3_2_dwconv_dwconv_0_Conv_output_0_bias       8/32        weights/weights           const float                  
-109    _convnet_conv3_2_dwconv_dwconv_0_Conv_output_0_output     256/1024    activations/**default**   float                        
-110    _convnet_conv3_2_dwconv_dwconv_0_Conv_output_0_weights    248/992     weights/weights           const float                  
-111    _convnet_conv3_2_dwconv_dwconv_2_Relu_output_0_output     256/1024    activations/**default**   float                        
-112    _convnet_conv3_2_pwconv_pwconv_0_Conv_output_0_bias       8/32        weights/weights           const float                  
-113    _convnet_conv3_2_pwconv_pwconv_0_Conv_output_0_output     256/1024    activations/**default**   float                        
-114    _convnet_conv3_2_pwconv_pwconv_0_Conv_output_0_scratch0   8/32        activations/**default**   float                        
-115    _convnet_conv3_2_pwconv_pwconv_0_Conv_output_0_weights    64/256      weights/weights           const float                  
-116    _convnet_conv4_conv4_0_Conv_output_0_bias                 8/32        weights/weights           const float                  
-117    _convnet_conv4_conv4_0_Conv_output_0_output               256/1024    activations/**default**   float                        
-118    _convnet_conv4_conv4_0_Conv_output_0_scratch0             72/288      activations/**default**   float                        
-119    _convnet_conv4_conv4_0_Conv_output_0_weights              576/2304    weights/weights           const float                  
-120    _convnet_conv4_conv4_2_Relu_output_0_output               256/1024    activations/**default**   float                        
-121    _convnet_gap_GlobalAveragePool_output_0_output            8/32        activations/**default**   float                        
-122    input_output                                              2048/8192   activations/**default**   float              /input    
-123    output_bias                                               8/32        weights/weights           const float                  
-124    output_output                                             8/32        activations/**default**   float              /output   
-125    output_weights                                            96/112      weights/weights           const lut4_float             
------- --------------------------------------------------------- ----------- ------------------------- ------------------ --------- 
+------ --------------------------------------------------------- ----------- ------------------------- ------------- --------- 
+c_id   name (*_array)                                            item/size   domain/mem-pool           c-type        comment   
+------ --------------------------------------------------------- ----------- ------------------------- ------------- --------- 
+0      _Abs_output_0_output                                      2048/8192   activations/**default**   float                   
+1      _Concat_1_output_0_output                                 12/48       activations/**default**   float                   
+2      _Concat_output_0_output                                   7/28        activations/**default**   float                   
+3      _Constant_2_output_0_3D                                   1/4         weights/weights           const float             
+4      _Constant_3_output_0_3D                                   1/4         weights/weights           const float             
+5      _Constant_4_output_0_3D                                   1/4         weights/weights           const float             
+6      _Constant_5_output_0_3D                                   1/4         weights/weights           const float             
+7      _Div_1_output_0_output                                    1/4         activations/**default**   float                   
+8      _Div_2_output_0_output                                    1/4         activations/**default**   float                   
+9      _Div_output_0_output                                      2048/8192   activations/**default**   float                   
+10     _Mul_2_output_0_output                                    2048/8192   activations/**default**   float                   
+11     _Mul_3_output_0_output                                    1/4         activations/**default**   float                   
+12     _Mul_4_output_0_output                                    1/4         activations/**default**   float                   
+13     _Mul_output_0_output                                      2048/8192   activations/**default**   float                   
+14     _Pow_1_output_0_output                                    2048/8192   activations/**default**   float                   
+15     _Pow_2_output_0_output                                    1/4         activations/**default**   float                   
+16     _Pow_3_output_0_output                                    2048/8192   activations/**default**   float                   
+17     _Pow_output_0_output                                      1/4         activations/**default**   float                   
+18     _Reciprocal_1_output_0_output                             1/4         activations/**default**   float                   
+19     _Reciprocal_output_0_output                               1/4         activations/**default**   float                   
+20     _ReduceMax_output_0_output                                1/4         activations/**default**   float                   
+21     _ReduceMean_1_output_0_Mul_output                         1/4         activations/**default**   float                   
+22     _ReduceMean_1_output_0_output                             1/4         activations/**default**   float                   
+23     _ReduceMean_2_output_0_Mul_output                         1/4         activations/**default**   float                   
+24     _ReduceMean_2_output_0_Mul_scale                          1/4         weights/weights           const float             
+25     _ReduceMean_2_output_0_output                             1/4         activations/**default**   float                   
+26     _ReduceMean_3_output_0_Mul_bias                           1/4         weights/weights           const float             
+27     _ReduceMean_3_output_0_Mul_output                         1/4         activations/**default**   float                   
+28     _ReduceMean_3_output_0_Mul_scale                          1/4         weights/weights           const float             
+29     _ReduceMean_3_output_0_output                             1/4         activations/**default**   float                   
+30     _ReduceMean_4_output_0_Mul_output                         1/4         activations/**default**   float                   
+31     _ReduceMean_4_output_0_output                             1/4         activations/**default**   float                   
+32     _ReduceMean_5_output_0_Mul_output                         1/4         activations/**default**   float                   
+33     _ReduceMean_5_output_0_output                             1/4         activations/**default**   float                   
+34     _ReduceMean_output_0_Mul_output                           1/4         activations/**default**   float                   
+35     _ReduceMean_output_0_output                               1/4         activations/**default**   float                   
+36     _Slice_output_0_output                                    4/16        activations/**default**   float                   
+37     _Sqrt_1_output_0_output                                   1/4         activations/**default**   float                   
+38     _Sqrt_output_0_output                                     1/4         activations/**default**   float                   
+39     _Sub_1_output_0_const_3D                                  1/4         weights/weights           const float             
+40     _Sub_2_output_0_output                                    2048/8192   activations/**default**   float                   
+41     _Sub_output_0_output                                      2048/8192   activations/**default**   float                   
+42     _convnet_conv1_conv_conv_0_Conv_output_0_bias             8/32        weights/weights           const float             
+43     _convnet_conv1_conv_conv_0_Conv_output_0_output           2048/8192   activations/**default**   float                   
+44     _convnet_conv1_conv_conv_0_Conv_output_0_scratch0         64/256      activations/**default**   float                   
+45     _convnet_conv1_conv_conv_0_Conv_output_0_weights          512/2048    weights/weights           const float             
+46     _convnet_conv1_conv_conv_2_Relu_output_0_output           2048/8192   activations/**default**   float                   
+47     _convnet_conv2_1_Add_output_0_output                      2048/8192   activations/**default**   float                   
+48     _convnet_conv2_1_act_Relu_output_0_output                 2048/8192   activations/**default**   float                   
+49     _convnet_conv2_1_dwconv_dwconv_0_Conv_output_0_bias       8/32        weights/weights           const float             
+50     _convnet_conv2_1_dwconv_dwconv_0_Conv_output_0_output     2048/8192   activations/**default**   float                   
+51     _convnet_conv2_1_dwconv_dwconv_0_Conv_output_0_weights    2040/8160   weights/weights           const float             
+52     _convnet_conv2_1_dwconv_dwconv_2_Relu_output_0_output     2048/8192   activations/**default**   float                   
+53     _convnet_conv2_1_pwconv_pwconv_0_Conv_output_0_bias       8/32        weights/weights           const float             
+54     _convnet_conv2_1_pwconv_pwconv_0_Conv_output_0_output     2048/8192   activations/**default**   float                   
+55     _convnet_conv2_1_pwconv_pwconv_0_Conv_output_0_scratch0   8/32        activations/**default**   float                   
+56     _convnet_conv2_1_pwconv_pwconv_0_Conv_output_0_weights    64/256      weights/weights           const float             
+57     _convnet_conv2_2_Add_output_0_output                      2048/8192   activations/**default**   float                   
+58     _convnet_conv2_2_act_Relu_output_0_output                 2048/8192   activations/**default**   float                   
+59     _convnet_conv2_2_dwconv_dwconv_0_Conv_output_0_bias       8/32        weights/weights           const float             
+60     _convnet_conv2_2_dwconv_dwconv_0_Conv_output_0_output     2048/8192   activations/**default**   float                   
+61     _convnet_conv2_2_dwconv_dwconv_0_Conv_output_0_weights    2040/8160   weights/weights           const float             
+62     _convnet_conv2_2_dwconv_dwconv_2_Relu_output_0_output     2048/8192   activations/**default**   float                   
+63     _convnet_conv2_2_pwconv_pwconv_0_Conv_output_0_bias       8/32        weights/weights           const float             
+64     _convnet_conv2_2_pwconv_pwconv_0_Conv_output_0_output     2048/8192   activations/**default**   float                   
+65     _convnet_conv2_2_pwconv_pwconv_0_Conv_output_0_scratch0   8/32        activations/**default**   float                   
+66     _convnet_conv2_2_pwconv_pwconv_0_Conv_output_0_weights    64/256      weights/weights           const float             
+67     _convnet_conv2_3_Add_output_0_output                      2048/8192   activations/**default**   float                   
+68     _convnet_conv2_3_act_Relu_output_0_output                 2048/8192   activations/**default**   float                   
+69     _convnet_conv2_3_dwconv_dwconv_0_Conv_output_0_bias       8/32        weights/weights           const float             
+70     _convnet_conv2_3_dwconv_dwconv_0_Conv_output_0_output     2048/8192   activations/**default**   float                   
+71     _convnet_conv2_3_dwconv_dwconv_0_Conv_output_0_weights    2040/8160   weights/weights           const float             
+72     _convnet_conv2_3_dwconv_dwconv_2_Relu_output_0_output     2048/8192   activations/**default**   float                   
+73     _convnet_conv2_3_pwconv_pwconv_0_Conv_output_0_bias       8/32        weights/weights           const float             
+74     _convnet_conv2_3_pwconv_pwconv_0_Conv_output_0_output     2048/8192   activations/**default**   float                   
+75     _convnet_conv2_3_pwconv_pwconv_0_Conv_output_0_scratch0   8/32        activations/**default**   float                   
+76     _convnet_conv2_3_pwconv_pwconv_0_Conv_output_0_weights    64/256      weights/weights           const float             
+77     _convnet_conv2_conv_conv_0_Conv_output_0_bias             8/32        weights/weights           const float             
+78     _convnet_conv2_conv_conv_0_Conv_output_0_output           256/1024    activations/**default**   float                   
+79     _convnet_conv2_conv_conv_0_Conv_output_0_weights          192/768     weights/weights           const float             
+80     _convnet_conv2_conv_conv_2_Relu_output_0_output           256/1024    activations/**default**   float                   
+81     _convnet_conv2_conv_conv_3_Conv_output_0_bias             8/32        weights/weights           const float             
+82     _convnet_conv2_conv_conv_3_Conv_output_0_output           256/1024    activations/**default**   float                   
+83     _convnet_conv2_conv_conv_3_Conv_output_0_scratch0         8/32        activations/**default**   float                   
+84     _convnet_conv2_conv_conv_3_Conv_output_0_weights          64/256      weights/weights           const float             
+85     _convnet_conv2_conv_conv_5_Relu_output_0_output           256/1024    activations/**default**   float                   
+86     _convnet_conv3_0_Add_output_0_output                      256/1024    activations/**default**   float                   
+87     _convnet_conv3_0_act_Relu_output_0_output                 256/1024    activations/**default**   float                   
+88     _convnet_conv3_0_dwconv_dwconv_0_Conv_output_0_bias       8/32        weights/weights           const float             
+89     _convnet_conv3_0_dwconv_dwconv_0_Conv_output_0_output     256/1024    activations/**default**   float                   
+90     _convnet_conv3_0_dwconv_dwconv_0_Conv_output_0_weights    248/992     weights/weights           const float             
+91     _convnet_conv3_0_dwconv_dwconv_2_Relu_output_0_output     256/1024    activations/**default**   float                   
+92     _convnet_conv3_0_pwconv_pwconv_0_Conv_output_0_bias       8/32        weights/weights           const float             
+93     _convnet_conv3_0_pwconv_pwconv_0_Conv_output_0_output     256/1024    activations/**default**   float                   
+94     _convnet_conv3_0_pwconv_pwconv_0_Conv_output_0_scratch0   8/32        activations/**default**   float                   
+95     _convnet_conv3_0_pwconv_pwconv_0_Conv_output_0_weights    64/256      weights/weights           const float             
+96     _convnet_conv3_1_Add_output_0_output                      256/1024    activations/**default**   float                   
+97     _convnet_conv3_1_act_Relu_output_0_output                 256/1024    activations/**default**   float                   
+98     _convnet_conv3_1_dwconv_dwconv_0_Conv_output_0_bias       8/32        weights/weights           const float             
+99     _convnet_conv3_1_dwconv_dwconv_0_Conv_output_0_output     256/1024    activations/**default**   float                   
+100    _convnet_conv3_1_dwconv_dwconv_0_Conv_output_0_weights    248/992     weights/weights           const float             
+101    _convnet_conv3_1_dwconv_dwconv_2_Relu_output_0_output     256/1024    activations/**default**   float                   
+102    _convnet_conv3_1_pwconv_pwconv_0_Conv_output_0_bias       8/32        weights/weights           const float             
+103    _convnet_conv3_1_pwconv_pwconv_0_Conv_output_0_output     256/1024    activations/**default**   float                   
+104    _convnet_conv3_1_pwconv_pwconv_0_Conv_output_0_scratch0   8/32        activations/**default**   float                   
+105    _convnet_conv3_1_pwconv_pwconv_0_Conv_output_0_weights    64/256      weights/weights           const float             
+106    _convnet_conv3_2_Add_output_0_output                      256/1024    activations/**default**   float                   
+107    _convnet_conv3_2_act_Relu_output_0_output                 256/1024    activations/**default**   float                   
+108    _convnet_conv3_2_dwconv_dwconv_0_Conv_output_0_bias       8/32        weights/weights           const float             
+109    _convnet_conv3_2_dwconv_dwconv_0_Conv_output_0_output     256/1024    activations/**default**   float                   
+110    _convnet_conv3_2_dwconv_dwconv_0_Conv_output_0_weights    248/992     weights/weights           const float             
+111    _convnet_conv3_2_dwconv_dwconv_2_Relu_output_0_output     256/1024    activations/**default**   float                   
+112    _convnet_conv3_2_pwconv_pwconv_0_Conv_output_0_bias       8/32        weights/weights           const float             
+113    _convnet_conv3_2_pwconv_pwconv_0_Conv_output_0_output     256/1024    activations/**default**   float                   
+114    _convnet_conv3_2_pwconv_pwconv_0_Conv_output_0_scratch0   8/32        activations/**default**   float                   
+115    _convnet_conv3_2_pwconv_pwconv_0_Conv_output_0_weights    64/256      weights/weights           const float             
+116    _convnet_conv4_conv4_0_Conv_output_0_bias                 8/32        weights/weights           const float             
+117    _convnet_conv4_conv4_0_Conv_output_0_output               256/1024    activations/**default**   float                   
+118    _convnet_conv4_conv4_0_Conv_output_0_scratch0             72/288      activations/**default**   float                   
+119    _convnet_conv4_conv4_0_Conv_output_0_weights              576/2304    weights/weights           const float             
+120    _convnet_conv4_conv4_2_Relu_output_0_output               256/1024    activations/**default**   float                   
+121    _convnet_gap_GlobalAveragePool_output_0_output            8/32        activations/**default**   float                   
+122    input_output                                              2048/8192   activations/**default**   float         /input    
+123    output_bias                                               8/32        weights/weights           const float             
+124    output_output                                             8/32        activations/**default**   float         /output   
+125    output_weights                                            96/384      weights/weights           const float             
+------ --------------------------------------------------------- ----------- ------------------------- ------------- --------- 
 
 C-Layers (74)
 ------ ------------------------------------------------ ---- --------------- -------- ------ ------------------------------------------------------------ --------------------- 
@@ -669,8 +669,8 @@ c_id   name (*_layer)                                   id   layer_type      mac
                                                                                              I: _Slice_output_0_output                                    f32(1x1x8) (121)      
                                                                                              O: _Concat_1_output_0_output                                 f32(1x12) (1)         
 ------ ------------------------------------------------ ---- --------------- -------- ------ ------------------------------------------------------------ --------------------- 
-73     output                                           87   Dense           104      144    I: _Concat_1_output_0_output                                 f32(1x12) (1)         
-                                                                                             W: output_weights                                            c4(8x12) (125)        
+73     output                                           87   Dense           104      416    I: _Concat_1_output_0_output                                 f32(1x12) (1)         
+                                                                                             W: output_weights                                            f32(8x12) (125)       
                                                                                              W: output_bias                                               f32(8) (123)          
                                                                                              O: output_output                                             f32(1x8) (124)        
 ------ ------------------------------------------------ ---- --------------- -------- ------ ------------------------------------------------------------ --------------------- 
@@ -754,7 +754,7 @@ c_id    m_id   name (type)                                             #op      
 70      83     _convnet_conv4_con..u_output_0 (Nonlinearity)           256     op_f32_f32 
 71      84     _convnet_gap_Globa..l_output_0 (Pool)                   256   smul_f32_f32 
 72      86     _Concat_1_output_0 (Concat)                               0   smul_f32_f32 
-73      87     output (Dense)                                          104    smul_f32_f4 
+73      87     output (Dense)                                          104   smul_f32_f32 
 ------- ------ ----------------------------------------------- ----------- -------------- 
 total                                                            1,905,462 
 
@@ -763,8 +763,7 @@ Number of operation types
 operation type             #           % 
 ---------------- ----------- ----------- 
 op_f32_f32            87,106        4.6% 
-smul_f32_f32       1,818,252       95.4% 
-smul_f32_f4              104        0.0% 
+smul_f32_f32       1,818,356       95.4% 
 
 Complexity report (model)
 ------ ------------------------------------------ ------------------------- ------------------------- ---------- 
@@ -774,7 +773,7 @@ m_id   name                                       c_macc                    c_ro
 1      _Constant_3_output_0                       |                  0.2%   |                  0.0%   [27]       
 2      _Constant_4_output_0                       |                  0.1%   |                  0.0%   [28]       
 3      _Constant_5_output_0                       |                  0.5%   |                  0.0%   [32]       
-87     linear_0_weight                            |                  0.0%   |                  0.4%   [73]       
+87     linear_0_weight                            |                  0.0%   |                  1.2%   [73]       
 4      _ReduceMean_output_0                       |                  0.1%   |                  0.0%   [16, 17]   
 5      _ReduceMean_1_output_0                     |                  0.1%   |                  0.0%   [4, 5]     
 10     _Sub_output_0                              |                  0.1%   |                  0.0%   [6]        
@@ -800,17 +799,17 @@ m_id   name                                       c_macc                    c_ro
 45     _Slice_output_0                            |                  0.0%   |                  0.0%   [31]       
 46     _convnet_conv1_conv_conv_0_Conv_output_0   ||||               6.9%   ||||               5.9%   [33]       
 47     _convnet_conv1_conv_conv_2_Relu_output_0   |                  0.1%   |                  0.0%   [34]       
-48     _convnet_conv2_1_dwconv_dwco..v_output_0   ||||||||||||||||  27.4%   ||||||||||||||||  23.4%   [35]       
+48     _convnet_conv2_1_dwconv_dwco..v_output_0   ||||||||||||||||  27.4%   ||||||||||||||||  23.2%   [35]       
 49     _convnet_conv2_1_dwconv_dwco..u_output_0   |                  0.1%   |                  0.0%   [36]       
 50     _convnet_conv2_1_pwconv_pwco..v_output_0   |                  0.9%   |                  0.8%   [37]       
 51     _convnet_conv2_1_Add_output_0              |                  0.1%   |                  0.0%   [38]       
 52     _convnet_conv2_1_act_Relu_output_0         |                  0.1%   |                  0.0%   [39]       
-53     _convnet_conv2_2_dwconv_dwco..v_output_0   ||||||||||||||||  27.4%   ||||||||||||||||  23.4%   [40]       
+53     _convnet_conv2_2_dwconv_dwco..v_output_0   ||||||||||||||||  27.4%   ||||||||||||||||  23.2%   [40]       
 54     _convnet_conv2_2_dwconv_dwco..u_output_0   |                  0.1%   |                  0.0%   [41]       
 55     _convnet_conv2_2_pwconv_pwco..v_output_0   |                  0.9%   |                  0.8%   [42]       
 56     _convnet_conv2_2_Add_output_0              |                  0.1%   |                  0.0%   [43]       
 57     _convnet_conv2_2_act_Relu_output_0         |                  0.1%   |                  0.0%   [44]       
-58     _convnet_conv2_3_dwconv_dwco..v_output_0   ||||||||||||||||  27.4%   ||||||||||||||||  23.4%   [45]       
+58     _convnet_conv2_3_dwconv_dwco..v_output_0   ||||||||||||||||  27.4%   ||||||||||||||||  23.2%   [45]       
 59     _convnet_conv2_3_dwconv_dwco..u_output_0   |                  0.1%   |                  0.0%   [46]       
 60     _convnet_conv2_3_pwconv_pwco..v_output_0   |                  0.9%   |                  0.8%   [47]       
 61     _convnet_conv2_3_Add_output_0              |                  0.1%   |                  0.0%   [48]       
@@ -834,29 +833,29 @@ m_id   name                                       c_macc                    c_ro
 79     _convnet_conv3_2_pwconv_pwco..v_output_0   |                  0.1%   |                  0.8%   [66]       
 80     _convnet_conv3_2_Add_output_0              |                  0.0%   |                  0.0%   [67]       
 81     _convnet_conv3_2_act_Relu_output_0         |                  0.0%   |                  0.0%   [68]       
-82     _convnet_conv4_conv4_0_Conv_output_0       |                  1.0%   |||||              6.7%   [69]       
+82     _convnet_conv4_conv4_0_Conv_output_0       |                  1.0%   |||||              6.6%   [69]       
 83     _convnet_conv4_conv4_2_Relu_output_0       |                  0.0%   |                  0.0%   [70]       
 84     _convnet_gap_GlobalAveragePool_output_0    |                  0.0%   |                  0.0%   [71]       
 86     _Concat_1_output_0                         |                  0.0%   |                  0.0%   [72]       
 ------ ------------------------------------------ ------------------------- ------------------------- ---------- 
-macc=1,905,462 weights=35,056 act=32,776 ram_io=0
+macc=1,905,462 weights=35,328 act=32,776 ram_io=0
  
  Requested memory size by section - "stm32f4" target
  ------------------------------ -------- -------- -------- -------- 
  module                             text   rodata     data      bss 
  ------------------------------ -------- -------- -------- -------- 
  NetworkRuntime1020_CM4_GCC.a     15,160        0        0        0 
- frfconv.o                         2,276      785   17,560      704 
+ frfconv.o                         2,268      785   17,560      704 
  frfconv_data.o                       48       16       88        0 
  lib (toolchain)*                  1,928       24        0        0 
  ------------------------------ -------- -------- -------- -------- 
- RT total**                       19,412      825   17,648      704 
+ RT total**                       19,404      825   17,648      704 
  ------------------------------ -------- -------- -------- -------- 
- weights                               0   35,056        0        0 
+ weights                               0   35,328        0        0 
  activations                           0        0        0   32,776 
  io                                    0        0        0        0 
  ------------------------------ -------- -------- -------- -------- 
- TOTAL                            19,412   35,881   17,648   33,480 
+ TOTAL                            19,404   36,153   17,648   33,480 
  ------------------------------ -------- -------- -------- -------- 
  *  toolchain objects (libm/libgcc*)
  ** RT AI runtime objects (kernels+infrastructure)
@@ -865,9 +864,9 @@ macc=1,905,462 weights=35,056 act=32,776 ram_io=0
   ---------------------------------------------------
                FLASH (ro)      %*   RAM (rw)       % 
   ---------------------------------------------------
-  RT total         37,885   51.9%     18,352   35.9% 
+  RT total         37,877   51.7%     18,352   35.9% 
   ---------------------------------------------------
-  TOTAL            72,941             51,128         
+  TOTAL            73,205             51,128         
   ---------------------------------------------------
   *  rt/total
 

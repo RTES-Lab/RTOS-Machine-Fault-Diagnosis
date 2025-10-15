@@ -2,7 +2,7 @@
   ******************************************************************************
   * @file    frfconv.c
   * @author  AST Embedded Analytics Research Platform
-  * @date    2025-10-09T14:29:35+0900
+  * @date    2025-10-14T15:22:11+0900
   * @brief   AI Tool Automatic Code Generator for Embedded NN computing
   ******************************************************************************
   * @attention
@@ -35,14 +35,14 @@
 #define AI_NET_OBJ_INSTANCE g_frfconv
  
 #undef AI_FRFCONV_MODEL_SIGNATURE
-#define AI_FRFCONV_MODEL_SIGNATURE     "0x26475cc1b24c812121e420354d70db54"
+#define AI_FRFCONV_MODEL_SIGNATURE     "0x06bca75565eb77fefbbcd7f976ae5d13"
 
 #ifndef AI_TOOLS_REVISION_ID
 #define AI_TOOLS_REVISION_ID     ""
 #endif
 
 #undef AI_TOOLS_DATE_TIME
-#define AI_TOOLS_DATE_TIME   "2025-10-09T14:29:35+0900"
+#define AI_TOOLS_DATE_TIME   "2025-10-14T15:22:11+0900"
 
 #undef AI_TOOLS_COMPILE_TIME
 #define AI_TOOLS_COMPILE_TIME    __DATE__ " " __TIME__
@@ -633,7 +633,7 @@ AI_ARRAY_OBJ_DECLARE(
 
 /* Array#115 */
 AI_ARRAY_OBJ_DECLARE(
-  output_weights_array, AI_ARRAY_FORMAT_LUT4_FLOAT,
+  output_weights_array, AI_ARRAY_FORMAT_FLOAT,
   NULL, NULL, 96, AI_STATIC)
 
 /* Array#116 */
@@ -1566,7 +1566,7 @@ AI_TENSOR_OBJ_DECLARE(
 AI_TENSOR_OBJ_DECLARE(
   output_weights, AI_STATIC,
   125, 0x0,
-  AI_SHAPE_INIT(4, 12, 8, 1, 1), AI_STRIDE_INIT(4, 1, 6, 48, 48),
+  AI_SHAPE_INIT(4, 12, 8, 1, 1), AI_STRIDE_INIT(4, 4, 48, 384, 384),
   1, &output_weights_array, NULL)
 
 
@@ -2991,14 +2991,14 @@ AI_LAYER_OBJ_DECLARE(
 AI_NETWORK_OBJ_DECLARE(
   AI_NET_OBJ_INSTANCE, AI_STATIC,
   AI_BUFFER_INIT(AI_FLAG_NONE,  AI_BUFFER_FORMAT_U8,
-    AI_BUFFER_SHAPE_INIT(AI_SHAPE_BCWH, 4, 1, 35056, 1, 1),
-    35056, NULL, NULL),
+    AI_BUFFER_SHAPE_INIT(AI_SHAPE_BCWH, 4, 1, 35328, 1, 1),
+    35328, NULL, NULL),
   AI_BUFFER_INIT(AI_FLAG_NONE,  AI_BUFFER_FORMAT_U8,
     AI_BUFFER_SHAPE_INIT(AI_SHAPE_BCWH, 4, 1, 32776, 1, 1),
     32776, NULL, NULL),
   AI_TENSOR_LIST_IO_OBJ_INIT(AI_FLAG_NONE, AI_FRFCONV_IN_NUM, &input_output),
   AI_TENSOR_LIST_IO_OBJ_INIT(AI_FLAG_NONE, AI_FRFCONV_OUT_NUM, &output_output),
-  &_Mul_2_output_0_layer, 0x6b7e4b74, NULL)
+  &_Mul_2_output_0_layer, 0x364ab53f, NULL)
 
 #else
 
@@ -3007,8 +3007,8 @@ AI_NETWORK_OBJ_DECLARE(
   AI_BUFFER_ARRAY_OBJ_INIT_STATIC(
   	AI_FLAG_NONE, 1,
     AI_BUFFER_INIT(AI_FLAG_NONE,  AI_BUFFER_FORMAT_U8,
-      AI_BUFFER_SHAPE_INIT(AI_SHAPE_BCWH, 4, 1, 35056, 1, 1),
-      35056, NULL, NULL)
+      AI_BUFFER_SHAPE_INIT(AI_SHAPE_BCWH, 4, 1, 35328, 1, 1),
+      35328, NULL, NULL)
   ),
   AI_BUFFER_ARRAY_OBJ_INIT_STATIC(
   	AI_FLAG_NONE, 1,
@@ -3018,7 +3018,7 @@ AI_NETWORK_OBJ_DECLARE(
   ),
   AI_TENSOR_LIST_IO_OBJ_INIT(AI_FLAG_NONE, AI_FRFCONV_IN_NUM, &input_output),
   AI_TENSOR_LIST_IO_OBJ_INIT(AI_FLAG_NONE, AI_FRFCONV_OUT_NUM, &output_output),
-  &_Mul_2_output_0_layer, 0x6b7e4b74, NULL)
+  &_Mul_2_output_0_layer, 0x364ab53f, NULL)
 
 #endif	/*(AI_TOOLS_API_VERSION < AI_TOOLS_API_VERSION_1_5)*/
 
@@ -3342,11 +3342,11 @@ ai_bool frfconv_configure_weights(
     _convnet_conv4_conv4_0_Conv_output_0_bias_array.data = AI_PTR(g_frfconv_weights_map[0] + 34880);
     _convnet_conv4_conv4_0_Conv_output_0_bias_array.data_start = AI_PTR(g_frfconv_weights_map[0] + 34880);
     output_weights_array.format |= AI_FMT_FLAG_CONST;
-    output_weights_array.data = AI_PTR(g_frfconv_weights_map[0] + 34976);
+    output_weights_array.data = AI_PTR(g_frfconv_weights_map[0] + 34912);
     output_weights_array.data_start = AI_PTR(g_frfconv_weights_map[0] + 34912);
     output_bias_array.format |= AI_FMT_FLAG_CONST;
-    output_bias_array.data = AI_PTR(g_frfconv_weights_map[0] + 35024);
-    output_bias_array.data_start = AI_PTR(g_frfconv_weights_map[0] + 35024);
+    output_bias_array.data = AI_PTR(g_frfconv_weights_map[0] + 35296);
+    output_bias_array.data_start = AI_PTR(g_frfconv_weights_map[0] + 35296);
     return true;
   }
   AI_ERROR_TRAP(net_ctx, INIT_FAILED, NETWORK_WEIGHTS);
@@ -3393,7 +3393,7 @@ ai_bool ai_frfconv_get_info(
       .params            = AI_STRUCT_INIT,
       .activations       = AI_STRUCT_INIT,
       .n_nodes           = 0,
-      .signature         = 0x6b7e4b74,
+      .signature         = 0x364ab53f,
     };
 
     if (!ai_platform_api_get_network_report(network, &r)) return false;
@@ -3441,7 +3441,7 @@ ai_bool ai_frfconv_get_report(
       .map_weights       = AI_STRUCT_INIT,
       .map_activations   = AI_STRUCT_INIT,
       .n_nodes           = 0,
-      .signature         = 0x6b7e4b74,
+      .signature         = 0x364ab53f,
     };
 
     if (!ai_platform_api_get_network_report(network, &r)) return false;

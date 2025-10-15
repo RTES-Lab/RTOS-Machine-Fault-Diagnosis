@@ -2,7 +2,7 @@
   ******************************************************************************
   * @file    frfconv.h
   * @author  AST Embedded Analytics Research Platform
-  * @date    2025-10-09T14:29:35+0900
+  * @date    2025-10-14T15:22:11+0900
   * @brief   AI Tool Automatic Code Generator for Embedded NN computing
   ******************************************************************************
   * @attention
@@ -20,11 +20,10 @@
 
 #include "frfconv_config.h"
 #include "ai_platform.h"
-//#include "ai_platform_interface.h"
 
 /******************************************************************************/
 #define AI_FRFCONV_MODEL_NAME          "frfconv"
-#define AI_FRFCONV_ORIGIN_MODEL_NAME   "st_frfconvtds_1000"
+#define AI_FRFCONV_ORIGIN_MODEL_NAME   "st_frfconvtds_1000_1013_v2"
 
 /******************************************************************************/
 #define AI_FRFCONV_ACTIVATIONS_ALIGNMENT   (4)

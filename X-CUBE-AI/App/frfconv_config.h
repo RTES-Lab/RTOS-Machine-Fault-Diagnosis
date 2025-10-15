@@ -3,7 +3,7 @@
   ******************************************************************************
   * @file    frfconv_config.h
   * @author  AST Embedded Analytics Research Platform
-  * @date    2025-10-09T14:29:35+0900
+  * @date    2025-10-14T15:22:11+0900
   * @brief   AI Tool Automatic Code Generator for Custom Layers Implementation
   ******************************************************************************
   * @attention

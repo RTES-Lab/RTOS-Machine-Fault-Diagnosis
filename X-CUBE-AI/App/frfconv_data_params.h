@@ -2,7 +2,7 @@
   ******************************************************************************
   * @file    frfconv_data_params.h
   * @author  AST Embedded Analytics Research Platform
-  * @date    2025-10-09T14:29:35+0900
+  * @date    2025-10-14T15:22:11+0900
   * @brief   AI Tool Automatic Code Generator for Embedded NN computing
   ******************************************************************************
   * Copyright (c) 2025 STMicroelectronics.
@@ -36,10 +36,10 @@
 
 
 #define AI_FRFCONV_DATA_WEIGHTS_SIZES \
-  { 35056, }
-#define AI_FRFCONV_DATA_WEIGHTS_SIZE         (35056)
+  { 35328, }
+#define AI_FRFCONV_DATA_WEIGHTS_SIZE         (35328)
 #define AI_FRFCONV_DATA_WEIGHTS_COUNT        (1)
-#define AI_FRFCONV_DATA_WEIGHT_1_SIZE        (35056)
+#define AI_FRFCONV_DATA_WEIGHT_1_SIZE        (35328)
 
 
 

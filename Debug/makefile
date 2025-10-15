@@ -39,34 +39,34 @@ $(wildcard ../makefile.init) \
 $(wildcard ../makefile.targets) \
 
 
-BUILD_ARTIFACT_NAME := RTOS-Machine-Fault-Diagnosis-test-execution_time
+BUILD_ARTIFACT_NAME := model_task
 BUILD_ARTIFACT_EXTENSION := elf
 BUILD_ARTIFACT_PREFIX :=
 BUILD_ARTIFACT := $(BUILD_ARTIFACT_PREFIX)$(BUILD_ARTIFACT_NAME)$(if $(BUILD_ARTIFACT_EXTENSION),.$(BUILD_ARTIFACT_EXTENSION),)
 
 # Add inputs and outputs from these tool invocations to the build variables 
 EXECUTABLES += \
-RTOS-Machine-Fault-Diagnosis-test-execution_time.elf \
+model_task.elf \
 
 MAP_FILES += \
-RTOS-Machine-Fault-Diagnosis-test-execution_time.map \
+model_task.map \
 
 SIZE_OUTPUT += \
 default.size.stdout \
 
 OBJDUMP_LIST += \
-RTOS-Machine-Fault-Diagnosis-test-execution_time.list \
+model_task.list \
 
 
 # All Target
 all: main-build
 
 # Main-build Target
-main-build: RTOS-Machine-Fault-Diagnosis-test-execution_time.elf secondary-outputs
+main-build: model_task.elf secondary-outputs
 
 # Tool invocations
-RTOS-Machine-Fault-Diagnosis-test-execution_time.elf RTOS-Machine-Fault-Diagnosis-test-execution_time.map: $(OBJS) $(USER_OBJS) C:\Users\ChoiSeongHyeon\Desktop\SR_CODE_Copy\RTOS-Machine-Fault-Diagnosis-test-execution_time\RTOS-Machine-Fault-Diagnosis-test-execution_time\STM32F401RETX_FLASH.ld makefile objects.list $(OPTIONAL_TOOL_DEPS)
-	arm-none-eabi-gcc -o "RTOS-Machine-Fault-Diagnosis-test-execution_time.elf" @"objects.list" $(USER_OBJS) $(LIBS) -mcpu=cortex-m4 -T"C:\Users\ChoiSeongHyeon\Desktop\SR_CODE_Copy\RTOS-Machine-Fault-Diagnosis-test-execution_time\RTOS-Machine-Fault-Diagnosis-test-execution_time\STM32F401RETX_FLASH.ld" --specs=nosys.specs -Wl,-Map="RTOS-Machine-Fault-Diagnosis-test-execution_time.map" -Wl,--gc-sections -static --specs=nano.specs -mfpu=fpv4-sp-d16 -mfloat-abi=hard -mthumb -u _printf_float -u _scanf_float -Wl,--start-group -lc -lm -Wl,--end-group
+model_task.elf model_task.map: $(OBJS) $(USER_OBJS) C:\Github\RTOS-Machine-Fault-Diagnosis\STM32F401RETX_FLASH.ld makefile objects.list $(OPTIONAL_TOOL_DEPS)
+	arm-none-eabi-gcc -o "model_task.elf" @"objects.list" $(USER_OBJS) $(LIBS) -mcpu=cortex-m4 -T"C:\Github\RTOS-Machine-Fault-Diagnosis\STM32F401RETX_FLASH.ld" --specs=nosys.specs -Wl,-Map="model_task.map" -Wl,--gc-sections -static -L../Middlewares/ST/AI/Lib --specs=nano.specs -mfpu=fpv4-sp-d16 -mfloat-abi=hard -mthumb -u _printf_float -u _scanf_float -Wl,--start-group -lc -lm -Wl,--end-group
 	@echo 'Finished building target: $@'
 	@echo ' '
 
@@ -75,14 +75,14 @@ default.size.stdout: $(EXECUTABLES) makefile objects.list $(OPTIONAL_TOOL_DEPS)
 	@echo 'Finished building: $@'
 	@echo ' '
 
-RTOS-Machine-Fault-Diagnosis-test-execution_time.list: $(EXECUTABLES) makefile objects.list $(OPTIONAL_TOOL_DEPS)
-	arm-none-eabi-objdump -h -S $(EXECUTABLES) > "RTOS-Machine-Fault-Diagnosis-test-execution_time.list"
+model_task.list: $(EXECUTABLES) makefile objects.list $(OPTIONAL_TOOL_DEPS)
+	arm-none-eabi-objdump -h -S $(EXECUTABLES) > "model_task.list"
 	@echo 'Finished building: $@'
 	@echo ' '
 
 # Other Targets
 clean:
-	-$(RM) RTOS-Machine-Fault-Diagnosis-test-execution_time.elf RTOS-Machine-Fault-Diagnosis-test-execution_time.list RTOS-Machine-Fault-Diagnosis-test-execution_time.map default.size.stdout
+	-$(RM) default.size.stdout model_task.elf model_task.list model_task.map
 	-@echo ' '
 
 secondary-outputs: $(SIZE_OUTPUT) $(OBJDUMP_LIST)

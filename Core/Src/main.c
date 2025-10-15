@@ -92,7 +92,7 @@ extern ApplicationTypeDef Appli_state;
 extern char USBHPath[4];
 extern USBH_HandleTypeDef hUsbHostFS;
 // 데이터 수집 완료를 알리기 위한 바이너리 세마포어 핸들
-SemaphoreHandle_t xDataReadySemaphore;
+//SemaphoreHandle_t xDataReadySemaphore;
 // USBReadTask에서 수집하고 modelTask에서 사용할 공유 데이터 버퍼
 static float sample_buffer[SAMPLES_TO_SAVE];
 extern UART_HandleTypeDef huart2;
@@ -187,11 +187,11 @@ int main(void)
 
 
 
-  xDataReadySemaphore = xSemaphoreCreateBinary();
-  if (xDataReadySemaphore == NULL) {
-      vPrintString("[ERROR] Failed to create data ready semaphore!\r\n");
-      while(1); // 시스템 정지
-  }
+//  xDataReadySemaphore = xSemaphoreCreateBinary();
+//  if (xDataReadySemaphore == NULL) {
+//      vPrintString("[ERROR] Failed to create data ready semaphore!\r\n");
+//      while(1); // 시스템 정지
+//  }
 
 //  xTaskCreate(vUSBhostTask, "USB host", 512, NULL, 4, NULL);
 //  xTaskCreate(vUSBReadTask, "USBRead",  1024,  NULL, 3, NULL);

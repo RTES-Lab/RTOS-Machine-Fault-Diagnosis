@@ -3711,56 +3711,56 @@
   ],
   "environment": {
     "generated_model": {
-      "generated_time": "2025-10-13T21:46:48+0900",
+      "generated_time": "2025-10-14T15:22:11+0900",
       "model_files": [
         {
           "name": "frfconv_data_params.h",
-          "signature": "0x1da193543a729fa45bd1cc08b264e4e8"
+          "signature": "0xbdb77f1072a94ef39465d97ba8ebf161"
         },
         {
           "name": "frfconv_data_params.c",
-          "signature": "0x7b7e6dc085b5ca70828bba81cf0b663c"
+          "signature": "0x085b1b78710b144559136b215e477458"
         },
         {
           "name": "frfconv_data.h",
-          "signature": "0xc6a6c2a5603bce14df4ad1a7730627c8"
+          "signature": "0xa41fd0f1e7e15ceed33f89cf6716b9cc"
         },
         {
           "name": "frfconv_data.c",
-          "signature": "0x93caed7114d769142909b90642b1d96b"
+          "signature": "0x5a0fc5f6f53574952b3dc677fcda3223"
         },
         {
           "name": "frfconv_config.h",
-          "signature": "0x35440479205874c8a0e587d564821f28"
+          "signature": "0x73c087dc235d5de9a55033592f447105"
         },
         {
           "name": "frfconv.h",
-          "signature": "0x542a37950941f414d9718fb22f21bc97"
+          "signature": "0x73f8b190db25030bb593cc2ab14ccbc5"
         },
         {
           "name": "frfconv.c",
-          "signature": "0x0cec354d23a14553309bb857540c6e76"
+          "signature": "0xc1c233ccd616fe60ce34c0aec5955a5e"
         }
       ],
       "name": "frfconv"
     },
-    "network_signature": "0x88558d9bc07e63be",
+    "network_signature": "0x364ab53f95b77c47",
     "test_name": "",
     "tools": [
       {
-        "arguments": "generate --target stm32f4 --name frfconv -m C:/Users/user/Downloads/ST_FRFconv-TDS_1000.onnx --compression none --verbosity 1 --workspace C:/Users/user/AppData/Local/Temp/mxAI_workspace99004278845750010139961863773245091 --output C:/Users/user/.stm32cubemx/frfconv_output",
+        "arguments": "generate --target stm32f4 --name frfconv -m C:/Users/user/Downloads/ST_FRFconv-TDS_1000_1013_v2.onnx --compression none --verbosity 1 --workspace C:/Users/user/AppData/Local/Temp/mxAI_workspace105336487446450016578309870527397335 --output C:/Users/user/.stm32cubemx/frfconv_output",
         "environment": [
           "STATS_TYPE=X-CUBE-AI"
         ],
         "input_model": {
           "model_files": [
             {
-              "name": "ST_FRFconv-TDS_1000.onnx",
-              "signature": "0x26475cc1b24c812121e420354d70db54"
+              "name": "ST_FRFconv-TDS_1000_1013_v2.onnx",
+              "signature": "0x06bca75565eb77fefbbcd7f976ae5d13"
             }
           ],
           "n_params": 8830,
-          "name": "ST_FRFconvTDS_1000",
+          "name": "ST_FRFconvTDS_1000_1013_v2",
           "size": 35320,
           "type": "onnx"
         },
@@ -4995,7 +4995,7 @@
       "inputs": [
         1252
       ],
-      "name": "ST_FRFconvTDS_1000",
+      "name": "ST_FRFconvTDS_1000_1013_v2",
       "nodes": [
         {
           "attributes": {
