@@ -1,5 +1,0 @@
-../Core/Src/FreeRTOS/heap_2.c:118:7:pvPortMalloc	12
-../Core/Src/FreeRTOS/heap_2.c:210:6:vPortFree	3
-../Core/Src/FreeRTOS/heap_2.c:237:8:xPortGetFreeHeapSize	1
-../Core/Src/FreeRTOS/heap_2.c:243:6:vPortInitialiseBlocks	1
-../Core/Src/FreeRTOS/heap_2.c:249:13:prvHeapInit	1

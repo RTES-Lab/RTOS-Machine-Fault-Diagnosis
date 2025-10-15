@@ -15,7 +15,6 @@ RM := rm -rf
 -include Middlewares/USB_Host_Library/subdir.mk
 -include Drivers/STM32F4xx_HAL_Driver/subdir.mk
 -include Core/Startup/subdir.mk
--include Core/Src/FreeRTOS/subdir.mk
 -include Core/Src/subdir.mk
 -include objects.mk
 

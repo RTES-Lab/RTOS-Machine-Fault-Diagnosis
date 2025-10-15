@@ -22,9 +22,6 @@
 #include "stm32f4xx_it.h"
 /* Private includes ----------------------------------------------------------*/
 /* USER CODE BEGIN Includes */
-#include "FreeRTOS.h"
-#include "semphr.h"
-extern SemaphoreHandle_t xBinarySemaphore;
 /* USER CODE END Includes */
 
 /* Private typedef -----------------------------------------------------------*/

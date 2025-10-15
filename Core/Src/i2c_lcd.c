@@ -1,9 +1,6 @@
 #include "i2c_lcd.h"
 #include "i2c.h"
 
-#include "FreeRTOS.h"
-#include "task.h"
-
 // --- 매핑 A: 가장 흔한 유형 (현재 코드 전제와 동일)
 #define LCD_BL 0x08
 #define LCD_EN 0x04
