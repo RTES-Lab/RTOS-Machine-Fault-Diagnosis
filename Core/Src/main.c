@@ -138,6 +138,7 @@ static bool USB_WaitReady(uint32_t wait_ms);
 static bool USB_ReadBlock(float *MAI, int N);
 static bool Model_Init(void);
 static bool Model_RunOnce(const float *in2048, int *top_cls, float *top_prob);
+static void LCD_PrintPaddedLine(uint8_t row, const char* s);
 static void LCD_ShowResult(int cls, float prob);
 
 
@@ -221,11 +222,11 @@ int main(void)
             continue;
         }
 
-        // (선택) 디버깅: 처음 3개 값
-        char dbg[96];
-        snprintf(dbg, sizeof(dbg), "Start: %.4f, %.4f, %.4f\r\n",
-                 sample_buffer[0], sample_buffer[1], sample_buffer[2]);
-        vPrintString(dbg);
+//        // (선택) 디버깅: 처음 3개 값
+//        char dbg[96];
+//        snprintf(dbg, sizeof(dbg), "Start: %.4f, %.4f, %.4f\r\n",
+//                 sample_buffer[0], sample_buffer[1], sample_buffer[2]);
+//        vPrintString(dbg);
 
         // 2) 모델 추론
         int top_cls = -1;
@@ -236,6 +237,7 @@ int main(void)
             continue;
         }
 
+        // 3) LCD
         LCD_ShowResult(top_cls, top_prob);
     }
 }
@@ -542,22 +544,45 @@ static bool Model_RunOnce(const float *in2048, int *top_cls, float *top_prob)
     return true;
 }
 
+/* 16x2 LCD 한 줄을 정확히 16자로 출력(남는 칸은 공백 채움) */
+static void LCD_PrintPaddedLine(uint8_t row, const char* s) {
+    char buf[17];
+    /* 좌측 정렬로 16자 채우기, 초과 시 잘라냄 */
+    snprintf(buf, sizeof(buf), "%-16.16s", s ? s : "");
+    lcd_put_cursor(row, 0);
+    lcd_send_string(buf);
+}
 
-/* ====== [ADD] LCD 표시 ====== */
+
 static void LCD_ShowResult(int cls, float prob)
 {
-    const char *label = (cls >=0 && cls < 8) ? kLabels8[cls] : "UNK";
-    const char *flag  = (cls == 0) ? "OK " : "ALRT";  // H만 OK, 나머지 경고
+    const char *label = (cls >= 0 && cls < 8) ? kLabels8[cls] : "UNK";
+
+    /* 윗줄: H(정상, cls==0)일 땐 공백(아무것도 출력 X),
+             그 외 결함일 땐 "Stop & Check !!" */
+    if (cls == 0) {
+        LCD_PrintPaddedLine(0, "");                 // 16칸 공백으로 클리어
+    } else {
+        LCD_PrintPaddedLine(0, "Stop & Check !!");  // 길이 15, LCD 16칸 내
+    }
+
+    /* 아랫줄: "<라벨> <확률%>" (소수점 2자리)
+       예: "H 99.32%" 또는 "M3 100.00%"
+       - LCD 폭 16자 안에 넉넉히 들어갑니다.
+       - 필요 시 자리맞춤(패딩)도 적용 */
     char line2[17];
     float pct = prob * 100.0f;
-    snprintf(line2, sizeof(line2), "%-4sConf:%5.1f%%", flag, pct);
-
-    lcd_clear();
-    lcd_put_cursor(0, 0);
-    lcd_send_string(label);   // 1행: H/L/U1/U2/U3/M1/M2/M3
-    lcd_put_cursor(1, 0);
-    lcd_send_string(line2);   // 2행: OK/ALRT + 확률
+    /* 좌측 정렬 패딩 포함(남는 칸 공백): */
+    snprintf(line2, sizeof(line2), "%-16.16s", "");  // 초기화
+    /* 실제 문자열 구성 */
+    char msg[16];
+    /* 라벨과 공백 하나, 그리고 퍼센트(소수 2자리) */
+    snprintf(msg, sizeof(msg), "%s %.2f%%", label, pct);
+    /* 최종 16자 패딩 출력 */
+    LCD_PrintPaddedLine(1, msg);
 }
+
+
 
 
 
