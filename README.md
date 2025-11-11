@@ -78,7 +78,7 @@ RTOS-Machine-Fault-Diagnosis/
 2. **Select a directory as workspace**에서, 해당 프로젝트 선택후 Launch
 3. **STM32CubeIDE**에서 'File' 선택 후 'Import' → 'General' → 'Existing Projects into Workspace' → 'Next'
 4. **Import Projects**에서 'Select root directory' 옆의 'Browse' 클릭 후 프로젝트와 동일한 이름의 내부 디렉토리 클릭 후 '폴더 선택', 이후 'Finish'
-5. **'Project Explorer'**의 프로젝트 명 위에서 우클릭 후 'Clean Project' → 'Build Project'
+5. **Project Explorer**의 프로젝트 명 위에서 우클릭 후 'Clean Project' → 'Build Project'
 6. PC와 MCU 연결 후 **상단 바의 'Run' 버튼 실행**
 ---
 
@@ -117,6 +117,6 @@ RTOS-Machine-Fault-Diagnosis/
 
 ---
 
-** RTES-Lab @ University of Seoul**
+**RTES-Lab @ University of Seoul**
 
 
